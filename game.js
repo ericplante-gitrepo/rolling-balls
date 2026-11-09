@@ -5,22 +5,24 @@
   const SCREEN_RIGHT_X = -1;
   const BALL_R = 0.45;
   const GRAVITY = 22;
-  const MAX_SPEED = 12;
-  const ACCEL = 12;
-  const BRAKE = 16;
+  // Single cruise-speed knob. Dependents below track it so a retune stays playable.
+  const MAX_SPEED = 16;
+  const ACCEL = MAX_SPEED;
+  const BRAKE = Math.round(MAX_SPEED * 1.3125); // was 16 at 12 m/s
   const ROLL_DRAG = 0.15;
   const COAST_DRAG = 0.55;
-  const DOWNHILL_CAP = 15;
-  const PAD_SPEED = 16;
+  const DOWNHILL_CAP = MAX_SPEED + 4;
+  const PAD_SPEED = MAX_SPEED + 5;
   const PAD_DURATION = 1.2;
-  const LAT_MAX = 6.5;
-  const LAT_RESPONSE = 12;
+  const LAT_MAX = MAX_SPEED * 8.5 / 16; // ~0.53× cruise (was 6.5 at 12)
+  const LAT_RESPONSE = 14;
   const AIR_RESPONSE = 2.5;
   const RESPAWN_S = 2;
   const FIXED_DT = 1 / 120;
   const FALL_Y = -10;
   const INPUT_GRACE = 0.4;
-  const CAMERA_TAU = 0.15;
+  // Lead tau kept so cruise lead ≈ 1.8 m (same framing as the 12 m/s build).
+  const CAMERA_TAU = 0.11;
   // LOOK_SPEC v1.1 camera (matches the reference video)
   const CAM_BEHIND = 8.5;
   const CAM_ABOVE = 4.0;
