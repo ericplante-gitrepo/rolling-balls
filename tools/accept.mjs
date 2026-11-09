@@ -114,59 +114,51 @@ async function respawnCheck() {
   const page = await browser.newPage({ viewport: { width: 1180, height: 820 } });
   await page.goto(base, { waitUntil: 'load' });
   await page.waitForFunction(() => window.__test);
-  // Level 4 has checkpoint at z=18
-  await page.evaluate(() => {
-    window.__test.startLevel(4);
-    // drive to checkpoint
-    window.__test.setDrag(0, 1);
-    for (let i=0;i<400;i++) window.__test.tick(1/60);
+  const result = await page.evaluate(() => {
+    const T = window.__test;
+    T.startLevel(4);
+    T.setDrag(0, 1);
+    let s;
+    for (let i = 0; i < 800; i++) {
+      T.tick(1/60); s = T.getState();
+      if (s.checkpointIndex >= 0 || s.ball.z > 20) break;
+    }
+    T.clearDrag();
+    if (s.checkpointIndex < 0) {
+      T.teleport(0, 2, 19);
+      for (let i = 0; i < 45; i++) T.tick(1/60);
+      s = T.getState();
+    }
+    T.teleport(0, 2.0, 20); T.clearDrag();
+    for (let i = 0; i < 5; i++) T.tick(1/60);
+    T.teleport(4.5, 2.2, 35);
+    for (let i = 0; i < 60; i++) {
+      T.tick(1/60); s = T.getState();
+      if (s.status === 'falling' || s.status === 'respawning') break;
+    }
+    if (s.status === 'playing') {
+      T.teleport(4.5, -11, 35);
+      for (let i = 0; i < 5; i++) T.tick(1/60);
+      s = T.getState();
+    }
+    const statusAtFall = T.getState().status;
+    let sim = 0, final = null;
+    for (let i = 0; i < 300; i++) {
+      T.tick(1/60); sim += 1/60; final = T.getState();
+      if (final.status === 'playing') break;
+    }
+    return {
+      beforeCP: s.checkpointIndex,
+      fallingStatus: statusAtFall,
+      respawnSimSec: +sim.toFixed(3),
+      status: final.status,
+      ballZ: +final.ball.z.toFixed(2),
+      cp: final.checkpointIndex,
+      ok: final.status === 'playing' && final.checkpointIndex >= 0 && sim >= 1.9 && sim <= 2.6
+    };
   });
-  let st = await page.evaluate(() => window.__test.getState());
-  // if not past checkpoint, teleport past it and tick
-  if (st.checkpointIndex < 0) {
-    await page.evaluate(() => {
-      window.__test.teleport(0, 2, 19);
-      for (let i=0;i<30;i++) window.__test.tick(1/60);
-    });
-    st = await page.evaluate(() => window.__test.getState());
-  }
-  const before = st;
-  // fall off
-  await page.evaluate(() => {
-    window.__test.teleport(6, 2, 30); // off rail width
-    for (let i=0;i<20;i++) window.__test.tick(1/60);
-  });
-  const falling = await page.evaluate(() => window.__test.getState());
-  const t0 = Date.now();
-  // tick until respawned
-  let after;
-  for (let i=0;i<200;i++) {
-    await page.evaluate(() => window.__test.tick(1/60));
-    after = await page.evaluate(() => window.__test.getState());
-    if (after.status === 'playing' && falling.status !== 'playing') break;
-  }
-  const elapsed = (Date.now() - t0); // wall clock not sim — compute sim: 2.0s target
-  // Better: count ticks
-  // Re-run timing via sim
-  await page.evaluate(() => {
-    window.__test.startLevel(4);
-    window.__test.teleport(0, 2, 19);
-    for (let i=0;i<30;i++) window.__test.tick(1/60);
-    window.__test.teleport(6, 2, 30);
-    for (let i=0;i<10;i++) window.__test.tick(1/60);
-  });
-  let sim = 0;
-  let status='';
-  let ballZ=0, cp=-1;
-  for (let i=0;i<300;i++) {
-    await page.evaluate(() => window.__test.tick(1/60));
-    sim += 1/60;
-    const s = await page.evaluate(() => window.__test.getState());
-    status = s.status; ballZ = s.ball.z; cp = s.checkpointIndex;
-    if (s.status === 'playing' && sim > 0.3) break;
-  }
   await browser.close();
-  return { beforeCP: before.checkpointIndex, fallingStatus: falling.status, respawnSimSec: sim, status, ballZ, cp };
+  return result;
 }
 
 const out = { chromiumLoad: null, webkitLoad: null, play: null, respawn: null };
