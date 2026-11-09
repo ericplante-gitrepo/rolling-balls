@@ -1,0 +1,12 @@
+import { chromium } from 'playwright'; import { serve } from './lib.mjs'; import fs from 'fs'; import path from 'path';
+const root = path.resolve(process.argv[2]); const code = fs.readFileSync(process.argv[3], 'utf8');
+const acc = fs.readFileSync(new URL('./accept3.mjs', import.meta.url), 'utf8');
+const bot = acc.slice(acc.indexOf('window.__bot = function'), acc.indexOf('};`;', acc.indexOf('window.__bot = function')) + 2);
+const { server, base } = await serve(root);
+const b = await chromium.launch({ args: ['--use-gl=swiftshader'] });
+const p = await (await b.newContext({ viewport: { width: 400, height: 300 } })).newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e)));
+await p.goto(base); await p.waitForFunction(() => window.__test);
+await p.evaluate(() => { window.__test.manual = true; window.__test.render = false; }); await p.evaluate(bot);
+console.log(JSON.stringify(await p.evaluate(code))); console.log('errors', errs.slice(0, 3));
+await b.close(); server.close();

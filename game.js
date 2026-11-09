@@ -176,60 +176,85 @@
     const ob = (type, s, extra = {}) => d.obstacles.push({ type, s, ...extra });
     const curve = (turn = 90, radius = 12, bank = 30) =>
       add(radius * Math.abs(rad(turn)), { turn, bank });
+    const total = () => d.pieces.reduce((v, p) => v + p.len, 0);
+    const cp = () => d.checkpoints.push(total() + 2);
+    // Rails / split lanes need bot lane hints; everything else steers by obstacle planning.
+    const lane = (s0, r) => d.hints.push({ s: s0, r, throttle: 1 });
+    // Bending 0.5 m rail: the precision beat that sets each level's difficulty (turn deg ~ fail rate).
+    const rail = (len, turn) => { const s0 = add(len, { kind: 'rails', width: 0.5, rails: [0], turn }); add(14); return s0; };
     add(30);
-    if (n === 1) {
-      add(40); curve(45, 15, 22); add(30, { grade: -0.1, ease: 3 }); add(40);
-    } else if (n === 2) {
+    if (n === 1) { // basics: gentle bends, a dip and a climb, one open-edge straight
+      add(30); curve(45, 15, 22); add(30, { grade: -0.1, ease: 3 }); curve(-60, 14, 25);
+      add(30, { grade: 0.1, ease: 3 }); add(25, { guard: 'right' }); curve(90, 12, 30);
+      add(35, { grade: -0.12, ease: 4 }); add(30);
+    } else if (n === 2) { // candy piles, S-bend, steeper drop
       ob('pile', 22); add(28, { guard: 'left' }); ob('pile', 43);
-      curve(); add(30, { grade: -0.15, ease: 3 }); ob('pile', 91); add(45);
-    } else if (n === 3) {
+      curve(); add(30, { grade: -0.15, ease: 3 }); ob('pile', total() - 12);
+      curve(-60, 12, 28); cp(); add(30, { guard: 'none', width: 4.2 }); ob('pile', total() - 18);
+      curve(75, 11, 30); add(30, { grade: -0.18, ease: 4 }); add(30);
+    } else if (n === 3) { // thin rails + open edges
       d.checkpoints.push(24); add(16, { grade: -0.15 });
-      const s = add(24, { kind: 'rails', width: 0.5, rails: [-1, 1] });
-      d.hints = [{ s: 0, r: 0, throttle: 1 }, { s: s - 8, r: 1, throttle: 1 },
-        { s: s + 25, r: 1, throttle: 1 }, { s: s + 34, r: 0, throttle: 1 }];
-      add(30); curve(60); add(45);
-    } else if (n === 4) {
+      let s = add(24, { kind: 'rails', width: 0.5, rails: [-1, 1] });
+      lane(0, 0); lane(s - 8, 1); lane(s + 25, 1); lane(s + 34, 0);
+      add(30, { guard: 'none' }); curve(60); cp();
+      add(20); s = add(28, { kind: 'rails', width: 0.5, rails: [0] });
+      lane(s - 6, 0); lane(s + 30, 0); d.pieces[d.pieces.length - 1].turn = 10;
+      add(25, { guard: 'none', width: 4 }); curve(-45, 14, 22); add(30);
+    } else if (n === 4) { // sliding walls on narrower and open decks
       add(65); ob('sliding', 42); ob('sliding', 72, { phase: 1.5 });
-      d.checkpoints.push(88); curve(60); curve(-60); add(40, { grade: -0.1, ease: 4 }); add(30);
-    } else if (n === 5) {
+      d.checkpoints.push(88); curve(60); curve(-60); add(40, { grade: -0.1, ease: 4 });
+      let s = add(50, { guard: 'none', width: 4.2 }); ob('sliding', s + 14, { phase: 0.7 }); ob('sliding', s + 34, { phase: 2.1 });
+      cp(); curve(90, 12, 30); add(20); rail(25, 12); add(20);
+    } else if (n === 5) { // first pendulum hammers
       add(75, { guard: 'left' });
       ob('hammer', 43, { period: 2.6 }); ob('hammer', 76, { period: 2.8, phase: 1.4 });
-      d.checkpoints.push(100); curve(); add(35, { grade: -0.12, ease: 4 }); add(35);
-    } else if (n === 6) {
+      d.checkpoints.push(100); curve(); add(35, { grade: -0.12, ease: 4 });
+      let s = add(60, { guard: 'none' }); ob('hammer', s + 18, { period: 2.6, phase: 0.6 }); ob('hammer', s + 42, { period: 2.4, phase: 2 });
+      cp(); curve(-60, 12, 28); add(20); rail(25, -12); add(20);
+    } else if (n === 6) { // jump pads, gaps, speed pad, 20% up / 25% down
       add(16); ob('jump', 44); add(7, { kind: 'gap', gapDy: -0.5 });
       add(25); d.checkpoints.push(67); ob('speed', 71);
       add(12, { grade: 0.2 }); add(6, { kind: 'gap', gapDy: -2.2 });
-      add(24, { grade: -0.25 }); curve(60); add(55);
-    } else if (n === 7) {
-      const s = add(30, { kind: 'rails', width: 1.35, rails: [0, 1.5] });
+      add(24, { grade: -0.25 }); curve(60); cp();
+      let s = add(20, { guard: 'none' }); ob('jump', s + 14); add(8, { kind: 'gap', gapDy: -0.8 });
+      add(30, { guard: 'none', width: 4.2 }); curve(-60, 12, 28); cp(); add(15); rail(25, 12); add(20);
+    } else if (n === 7) { // side-boost panels between split platforms
+      let s = add(30, { kind: 'rails', width: 1.35, rails: [0, 1.5] });
       ob('side', s - 1, { dir: 1, r: 0 });
-      d.hints = [{ s: 0, r: 0, throttle: 1 }, { s: 29, r: 0, throttle: 1 },
-        { s: 34, r: 1.5, throttle: 1 }, { s: 62, r: 1.5, throttle: 1 },
-        { s: 75, r: 0, throttle: 1 }];
-      add(30, { guard: 'left', grade: -0.1, ease: 4 }); curve(-60); add(55);
-    } else if (n === 8) {
+      lane(0, 0); lane(29, 0); lane(34, 1.5); lane(s + 32, 1.5); lane(s + 45, 0);
+      add(30, { guard: 'left', grade: -0.1, ease: 4 }); curve(-60); cp();
+      s = add(30, { kind: 'rails', width: 1.35, rails: [0, -1.5] });
+      ob('side', s - 1, { dir: -1, r: 0 });
+      lane(s - 12, 0); lane(s - 1, 0); lane(s + 4, -1.5); lane(s + 28, -1.5); lane(s + 40, 0);
+      add(25, { guard: 'none' }); curve(60, 12, 28); add(15); rail(25, -12); add(20);
+    } else if (n === 8) { // hammers + rolling balls (down and across)
       add(65, { guard: 'left' }); ob('hammer', 45, { period: 2.7 });
       ob('rollball', 68, { s0: 63, s1: 90, r: -0.8, mode: 'down', diameter: 1.7, speed: 5 });
       d.checkpoints.push(96); curve(); add(45, { grade: -0.1, ease: 4 });
-      ob('rollball', 132, { mode: 'across', diameter: 1.6, speed: 4 }); add(40);
-    } else if (n === 9) {
+      ob('rollball', 132, { mode: 'across', diameter: 1.6, speed: 4 }); add(30);
+      cp(); let s = add(60, { guard: 'none' });
+      ob('hammer', s + 15, { period: 2.6, phase: 1 }); ob('rollball', s + 38, { mode: 'across', diameter: 1.6, speed: 4.5 });
+      curve(-75, 11, 30); add(15); rail(30, 18); add(20);
+    } else if (n === 9) { // big banked bowls + thin rail + hammers
       curve(90, 9, 35); add(25, { grade: 0.15, ease: 3 });
       curve(-90, 9, 35); d.checkpoints.push(78);
       add(20, { guard: 'right' }); ob('hammer', 88, { period: 2.8 });
-      const s = add(19, { kind: 'rails', width: 0.5, rails: [0] });
-      d.hints = [{ s: 0, r: 0, throttle: 1 }, { s: s, r: 0, throttle: 1 }];
-      add(30, { grade: -0.2, ease: 4 }); curve(90, 10, 35); add(40);
-    } else {
+      let s = add(19, { kind: 'rails', width: 0.5, rails: [0], turn: 12 });
+      lane(0, 0); lane(s, 0);
+      add(30, { grade: -0.2, ease: 4 }); curve(90, 10, 35); cp();
+      s = add(40, { guard: 'none' }); ob('hammer', s + 20, { period: 2.5, phase: 0.4 });
+      curve(-90, 9, 35); add(40);
+    } else { // sliding floor bars finale + hammer + rolling ball
       add(12); d.checkpoints.push(35);
-      const bars = () => Array.from({ length: 5 }, (_, i) => ({
-        s: i * 4 + 2, len: 3.6, w: 2.2, amp: 1.2, period: 2.5, phase: i * 0.25
+      const bars = (k = 5, amp = 1.2) => Array.from({ length: k }, (_, i) => ({
+        s: i * 4 + 2, len: 3.6, w: 2.2, amp, period: 2.5, phase: i * 0.25
       }));
       add(20, { kind: 'bars', bars: bars() }); add(28);
       curve(60); add(25, { grade: -0.1, ease: 4 }); d.checkpoints.push(119);
       add(20, { kind: 'bars', bars: bars() }); add(55, { guard: 'left' });
-      const total = d.pieces.reduce((v, p) => v + p.len, 0);
-      ob('hammer', total - 37, { period: 2.8 });
-      ob('rollball', total - 17, { mode: 'across', diameter: 1.6, speed: 4 }); add(25);
+      ob('hammer', total() - 37, { period: 2.8 });
+      ob('rollball', total() - 17, { mode: 'across', diameter: 1.6, speed: 4 }); add(20);
+      cp(); curve(-60, 12, 28); add(15); add(28, { kind: 'bars', bars: bars(7, 1.3) }); add(20); rail(30, -18); add(20);
     }
     return d;
   }
