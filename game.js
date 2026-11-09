@@ -190,7 +190,7 @@
     } else if (n === 2) { // candy piles, S-bend, steeper drop
       ob('pile', 22); add(28, { guard: 'left' }); ob('pile', 43);
       curve(); add(30, { grade: -0.15, ease: 3 }); ob('pile', total() - 12);
-      curve(-60, 12, 28); cp(); add(30, { guard: 'none', width: 4.2 }); ob('pile', total() - 18);
+      curve(-60, 12, 28); cp(); add(30, { guard: 'none' }); ob('pile', total() - 18);
       curve(75, 11, 30); add(30, { grade: -0.18, ease: 4 }); add(30);
     } else if (n === 3) { // thin rails + open edges
       d.checkpoints.push(24); add(16, { grade: -0.15 });
@@ -199,11 +199,11 @@
       add(30, { guard: 'none' }); curve(60); cp();
       add(20); s = add(28, { kind: 'rails', width: 0.5, rails: [0] });
       lane(s - 6, 0); lane(s + 30, 0); d.pieces[d.pieces.length - 1].turn = 10;
-      add(25, { guard: 'none', width: 4 }); curve(-45, 14, 22); add(30);
+      add(25, { guard: 'none' }); curve(-45, 14, 22); add(30);
     } else if (n === 4) { // sliding walls on narrower and open decks
       add(65); ob('sliding', 42); ob('sliding', 72, { phase: 1.5 });
       d.checkpoints.push(88); curve(60); curve(-60); add(40, { grade: -0.1, ease: 4 });
-      let s = add(50, { guard: 'none', width: 4.2 }); ob('sliding', s + 14, { phase: 0.7 }); ob('sliding', s + 34, { phase: 2.1 });
+      let s = add(50, { guard: 'none' }); ob('sliding', s + 14, { phase: 0.7 }); ob('sliding', s + 34, { phase: 2.1 });
       cp(); curve(90, 12, 30); add(20); rail(25, 12); add(20);
     } else if (n === 5) { // first pendulum hammers
       add(75, { guard: 'left' });
@@ -217,7 +217,7 @@
       add(12, { grade: 0.2 }); add(6, { kind: 'gap', gapDy: -2.2 });
       add(24, { grade: -0.25 }); curve(60); cp();
       let s = add(20, { guard: 'none' }); ob('jump', s + 14); add(8, { kind: 'gap', gapDy: -0.8 });
-      add(30, { guard: 'none', width: 4.2 }); curve(-60, 12, 28); cp(); add(15); rail(25, 12); add(20);
+      add(30, { guard: 'none' }); curve(-60, 12, 28); cp(); add(15); rail(25, 12); add(20);
     } else if (n === 7) { // side-boost panels between split platforms
       let s = add(30, { kind: 'rails', width: 1.35, rails: [0, 1.5] });
       ob('side', s - 1, { dir: 1, r: 0 });
@@ -229,11 +229,11 @@
       add(25, { guard: 'none' }); curve(60, 12, 28); add(15); rail(25, -12); add(20);
     } else if (n === 8) { // hammers + rolling balls (down and across)
       add(65, { guard: 'left' }); ob('hammer', 45, { period: 2.7 });
-      ob('rollball', 68, { s0: 63, s1: 90, r: -0.8, mode: 'down', diameter: 1.7, speed: 5 });
+      ob('rollball', 68, { s0: 63, s1: 90, r: -0.8, mode: 'down', diameter: 2, speed: 5 });
       d.checkpoints.push(96); curve(); add(45, { grade: -0.1, ease: 4 });
-      ob('rollball', 132, { mode: 'across', diameter: 1.6, speed: 4 }); add(30);
+      ob('rollball', 132, { mode: 'across', diameter: 2, speed: 4 }); add(30);
       cp(); let s = add(60, { guard: 'none' });
-      ob('hammer', s + 15, { period: 2.6, phase: 1 }); ob('rollball', s + 38, { mode: 'across', diameter: 1.6, speed: 4.5 });
+      ob('hammer', s + 15, { period: 2.6, phase: 1 }); ob('rollball', s + 38, { mode: 'across', diameter: 2, speed: 4.5 });
       curve(-75, 11, 30); add(15); rail(30, 18); add(20);
     } else if (n === 9) { // big banked bowls + thin rail + hammers
       curve(90, 9, 35); add(25, { grade: 0.15, ease: 3 });
@@ -253,7 +253,7 @@
       curve(60); add(25, { grade: -0.1, ease: 4 }); d.checkpoints.push(119);
       add(20, { kind: 'bars', bars: bars() }); add(55, { guard: 'left' });
       ob('hammer', total() - 37, { period: 2.8 });
-      ob('rollball', total() - 17, { mode: 'across', diameter: 1.6, speed: 4 }); add(20);
+      ob('rollball', total() - 17, { mode: 'across', diameter: 2, speed: 4 }); add(20);
       cp(); curve(-60, 12, 28); add(15); add(28, { kind: 'bars', bars: bars(7, 1.3) }); add(20); rail(30, -18); add(20);
     }
     return d;
@@ -557,10 +557,10 @@
   }
   function addFinish() {
     const g = new THREE.Group(); root.add(g); setObject(g, finishS, 0, 2.5); g.name = 'finish';
-    g.add(new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.075, 8, 64), emissive(0x9AF0FF)));
+    g.add(new THREE.Mesh(new THREE.TorusGeometry(2.5, 0.075, 8, 64), emissive(0x9AF0FF))); /* 5 m ring (VISUAL_GAPS 7) */
     for (let i = 0; i < 16; i++) {
       const bulb = sphere(0.12, mats.white, g, 8), a = i * Math.PI / 8;
-      bulb.position.set(2.4 * Math.cos(a), 2.4 * Math.sin(a), 0);
+      bulb.position.set(2.5 * Math.cos(a), 2.5 * Math.sin(a), 0);
     }
     const points = [];
     for (let i = 0; i < 100; i++) {
@@ -587,14 +587,14 @@
     checkpoints.forEach(c => c.mesh.scale.setScalar(1.04 + 0.04 * Math.sin(state.simTime * Math.PI * 2)));
     for (let i = debris.length - 1; i >= 0; i--) {
       const d = debris[i]; d.age += dt;
-      if (d.age >= 1.5) {
+      if (d.age >= 1.4) { // smash debris gone within 1.5 s (VISUAL_GAPS 8)
         root.remove(d.mesh); d.mesh.geometry.dispose(); d.mesh.material.dispose();
         debris.splice(i, 1); continue;
       }
       d.vy -= C.GRAVITY * dt;
       d.mesh.position.addScaledVector(new THREE.Vector3(d.vx, d.vy, d.vz), dt);
       d.mesh.rotation.x += dt * 5; d.mesh.rotation.z += dt * 3;
-      d.mesh.material.opacity = clamp((1.5 - d.age) / 0.4, 0, 1);
+      d.mesh.material.opacity = clamp((1.4 - d.age) / 0.4, 0, 1);
     }
   }
 
@@ -1262,7 +1262,24 @@
         lookX: look.x, lookY: look.y, lookZ: look.z };
     },
     getConfig: () => ({ ...C }), getPlanetScreen,
-    getScene: () => scene, getDebrisCount: () => debris.length
+    getScene: () => scene, getDebrisCount: () => debris.length,
+    // Screen y (0..1 from top) of the true horizon: a far point level with the camera, straight ahead.
+    getHorizon() {
+      const dx = look.x - camera.position.x, dz = look.z - camera.position.z, l = Math.hypot(dx, dz) || 1;
+      const p = projectPoint(camera.position.x + dx / l * 5000, camera.position.y, camera.position.z + dz / l * 5000);
+      return p.sy / Math.max(1, height);
+    },
+    // Share of screen width the track deck fills at the bottom screen edge (searches back from the ball).
+    getNearTrackWidth() {
+      for (let s = state.s; s > state.s - 30; s -= 0.05) {
+        const t = sampleTrack(s, 0), c = worldAt(s, 0, 0), pc = projectPoint(c.x, c.y, c.z);
+        if (pc.sy >= height) {
+          const a = worldAt(s, t.center - t.half, 0), b = worldAt(s, t.center + t.half, 0);
+          return { s, frac: Math.abs(projectPoint(b.x, b.y, b.z).sx - projectPoint(a.x, a.y, a.z).sx) / Math.max(1, width) };
+        }
+      }
+      return null;
+    }
   };
   window.__test = test;
 

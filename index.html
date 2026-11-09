@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Build id s3-5: bump the ?v= on both scripts every commit (iPad Safari kept a stale game.js). -->
+    <!-- Build id s3-6: bump the ?v= on both scripts every commit (iPad Safari kept a stale game.js). -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -129,10 +129,11 @@
         #pause-button.paused .play-tri { display: block; }
 
         #level-complete {
+            /* VISUAL_GAPS 11: panel sits at the bottom so Continue is bottom centre */
             position: absolute;
-            top: 50%;
+            bottom: max(24px, env(safe-area-inset-bottom));
             left: 50%;
-            transform: translate(-50%, -50%);
+            transform: translateX(-50%);
             background: rgba(27, 31, 85, 0.9);
             border-radius: 20px;
             padding: 30px;
@@ -230,7 +231,7 @@
         <div class="speed-streak right-streak"></div>
     </div>
 
-    <script src="./vendor/three.min.js?v=s3-5"></script>
-    <script src="./game.js?v=s3-5"></script>
+    <script src="./vendor/three.min.js?v=s3-6"></script>
+    <script src="./game.js?v=s3-6"></script>
 </body>
 </html>

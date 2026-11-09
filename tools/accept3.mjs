@@ -106,8 +106,15 @@ if (want('load')) for (const [w, h] of SIZES) {
   check('load', `${w}x${h} no external requests / 4xx`, o.external.length === 0 && o.missing.length === 0, o.external.concat(o.missing).slice(0, 3));
   const f1 = frames.out[0]; const down = f1.sy / h, size = (f1.size || 0) / h;
   check('camera', `${w}x${h} ball ~70% down the screen (65-76%)`, down >= 0.65 && down <= 0.76, { down: r2(down) });
-  check('camera', `${w}x${h} ball 5-8% of screen height`, size >= 0.05 && size <= 0.08, { size: +size.toFixed(3) });
-  gapRow('framing', 'ball 65-76% down, 5-8% tall at 4 sizes', `${w}x${h}: ${Math.round(down * 100)}% down, ${(size * 100).toFixed(1)}%`, down >= 0.65 && down <= 0.76 && size >= 0.05 && size <= 0.08);
+  check('camera', `${w}x${h} ball 8-9% of screen height (AD update; 7.8-9.5 tolerance)`, size >= 0.078 && size <= 0.095, { size: +size.toFixed(3) });
+  gapRow('framing', 'ball 65-76% down, 8-9% tall at 4 sizes', `${w}x${h}: ${Math.round(down * 100)}% down, ${(size * 100).toFixed(1)}%`, down >= 0.65 && down <= 0.76 && size >= 0.078 && size <= 0.095);
+  if (w === 1180) {
+    const tags = await o.page.evaluate(() => ({ scripts: [...document.scripts].map(x => x.getAttribute('src') || '').filter(Boolean), meta: [...document.querySelectorAll('meta[http-equiv]')].map(m => m.getAttribute('http-equiv') + '=' + m.getAttribute('content')) }));
+    const tagged = tags.scripts.filter(x => /(?:game\.js|three\.min\.js)\?v=[\w.-]+/.test(x));
+    const ok = tagged.length === 2 && tags.meta.some(m => /cache-control=.*no-cache/i.test(m));
+    check('load', 'game.js + three.min.js load with ?v=<build id>, no-cache meta present', ok, tags);
+    gapRow('load', 'cache-busting ?v= + no-cache meta', tagged.join(', '), ok);
+  }
   const pb = await o.page.evaluate(() => window.__test.getPlanetScreen());
   check('look', `${w}x${h} planet fully on screen, upper-left`, pb && pb.left >= 0 && pb.top >= 0 && pb.right <= w && pb.bottom <= h && (pb.left + pb.right) / 2 < w / 2 && (pb.top + pb.bottom) / 2 < h / 2, pb);
   await o.page.screenshot({ path: path.join(SHOTS, `L1-start-${w}x${h}.png`) });
@@ -415,6 +422,114 @@ if (want('physics')) {
   check('levels', '10 levels; mechanics appear in the video order (rails > hammer > pads/gaps > hammers+balls > bars)', okOrder, { order, levels: m.levels.map(l => [l.L, l.name, l.len]) });
   gapRow('11 Levels', '10 levels in video order', `${m.levels.length} levels; first rails L${order.rails}, hammer L${order.hammer}, pads+gaps L${order.padsGaps}, hammers+balls L${order.hammerBalls}, bars L${order.bars}`, okOrder);
   check('physics', 'no errors', o.errors.length === 0, o.errors.slice(0, 3));
+  await o.ctx.close();
+}
+
+// ---------- 6. Look (VISUAL_GAPS_v1 + AD rulings), measured from the scene graph, DOM and pixels
+if (want('look')) {
+  // 6a framing at 4 sizes: horizon 45-50%, near track 35-45% width at phone landscape (the video's aspect)
+  for (const [w, h] of SIZES) {
+    const o = await open(w, h, { render: true }); const { page } = o;
+    const f = await page.evaluate(() => { const T = window.__test; T.startLevel(1); for (let i = 0; i < 40; i++) T.tick(1/60);
+      const m = () => ({ hz: +T.getHorizon().toFixed(3), track: +(T.getNearTrackWidth() || { frac: 0 }).frac.toFixed(3), fov: +T.getCamera().fov.toFixed(1) });
+      const rest = m(); T.setDrag(0, 1); for (let i = 0; i < 180; i++) T.tick(1/60); const cruise = m(); T.clearDrag(); return { rest, cruise }; });
+    const hzOk = [f.rest, f.cruise].every(q => q.hz >= 0.45 && q.hz <= 0.5);
+    check('look', `${w}x${h} horizon at 45-50% of screen height (rest + 16 m/s)`, hzOk, f);
+    gapRow('framing', 'horizon 45-50% of screen height', `${w}x${h}: ${(f.rest.hz * 100).toFixed(1)}% rest, ${(f.cruise.hz * 100).toFixed(1)}% cruise`, hzOk);
+    if (w / h > 2) {
+      const tOk = [f.rest, f.cruise].every(q => q.track >= 0.35 && q.track <= 0.45);
+      check('look', `${w}x${h} near track fills 35-45% of screen width at the bottom edge`, tOk, f);
+      gapRow('framing', 'near track 35-45% of width (phone landscape, video aspect)', `${w}x${h}: ${(f.rest.track * 100).toFixed(1)}%`, tOk);
+    } else gapRow('framing', 'near track width (info only off phone-landscape: fixed vertical FOV)', `${w}x${h}: ${(f.rest.track * 100).toFixed(1)}%`, true);
+    await o.ctx.close();
+  }
+  const o = await open(1180, 820, { render: true }); const { page } = o;
+  const g = await page.evaluate(() => {
+    const T = window.__test, S = T.getScene(), r = {};
+    const meshes = n => { const out = []; S.traverse(x => { if (x.name === n) out.push(x); }); return out; };
+    const hex = m => '#' + m.material.color.getHexString().toUpperCase();
+    // track body + edge band near the start of L1 (flat, straight)
+    T.startLevel(1); T.tick(1/60);
+    const c = T.worldAt(5, 0, 0), rv = T.worldAt(5, 1, 0); const ux = rv.x - c.x, uz = rv.z - c.z; const half = T.getTrackInfo(5, 0).half;
+    const near = (name) => { const m = meshes('track-' + name)[0]; if (!m) return []; const a = m.geometry.attributes.position.array, out = [];
+      for (let i = 0; i < a.length; i += 3) { const dx = a[i] - c.x, dz = a[i + 2] - c.z; const along = Math.hypot(dx - ux * (dx * ux + dz * uz), dz - uz * (dx * ux + dz * uz));
+        if (along < 3) out.push({ r: dx * ux + dz * uz, y: a[i + 1] - c.y }); } return out; };
+    const navy = near('navy'), mint = near('mint'), yellow = near('yellow');
+    r.sideDepth = +(-Math.min(...navy.map(p => p.y))).toFixed(3);
+    const band = (pts) => { const rr = pts.filter(p => p.r > 0 && Math.abs(p.y) < 0.1).map(p => half - p.r); return rr.length ? [+Math.min(...rr).toFixed(3), +Math.max(...rr).toFixed(3)] : null; };
+    r.mintBand = band(mint); r.yellowBand = band(yellow); r.navyColor = hex(meshes('track-navy')[0]);
+    // widths across all levels
+    r.widths = []; for (let L = 1; L <= T.getLevelCount(); L++) { T.startLevel(L); for (const p of T.getPieces()) if (p.kind === 'deck') r.widths.push(p.width); else if (p.kind === 'rails') r.widths.push('r' + p.width); }
+    // ground plane
+    T.startLevel(1); const gr = meshes('ground')[0]; const P = T.getPieces(); let ymin = 0; for (const p of P) for (let s = p.s0; s <= p.s1; s += 2) ymin = Math.min(ymin, T.getTrackInfo(s, 0).y);
+    r.groundDrop = gr ? +(ymin - gr.position.y).toFixed(2) : null; r.groundRepeat = gr && gr.material.map ? gr.material.map.repeat.x : null; r.groundSize = gr ? gr.geometry.parameters.width : null;
+    const box3 = (o3) => { const b = new THREE.Box3().setFromObject(o3); const v = new THREE.Vector3(); b.getSize(v); return v; };
+    // checkpoint arch
+    T.startLevel(3); const cp = meshes('checkpoint')[0]; r.checkpoint = cp ? { h: +box3(cp).y.toFixed(2), hasMint: cp.children.some(ch => ch.material && '#' + ch.material.color.getHexString().toUpperCase() === '#3EE6B0'), hasNavy: cp.children.some(ch => ch.material && '#' + ch.material.color.getHexString().toUpperCase() === '#1B1F55') } : null;
+    // finish ring
+    const fin = meshes('finish')[0]; if (fin) { const ring = fin.children.find(ch => ch.geometry && ch.geometry.type === 'TorusGeometry'); r.finishDiameter = ring ? +(2 * ring.geometry.parameters.radius).toFixed(2) : null; }
+    T.startLevel(1); const before = T.getDebrisCount(); T.finishNow(); const conf = []; S.traverse(x => { if (x.name === 'confetti') conf.push('#' + x.material.color.getHexString().toUpperCase()); });
+    r.confetti = conf.length; r.confettiColors = [...new Set(conf)]; r.flash = [...document.querySelectorAll('#game > div')].some(d => /background: white/.test(d.style.cssText));
+    // smash: one pile, count chunks/sparks of the first cube hit, then all debris gone within 1.5 s
+    T.startLevel(2); const pile = T.getObstacles().find(x => x.type === 'candy'); T.placeBall(pile.s - 6, pile.r, 10, 0); T.setDrag(0, 1);
+    let chunks = 0, sparks = 0, t = 0; for (let i = 0; i < 120 && !chunks; i++) { T.tick(1/60); S.traverse(x => { if (x.name === 'chunk') chunks++; if (x.name === 'spark') sparks++; }); }
+    const cubes = sparks / 12; r.smash = { chunks, sparks, chunksPerCube: cubes ? +(chunks / cubes).toFixed(2) : 0 };
+    T.clearDrag(); T.placeBall(pile.s + 30, 0, 0, 0); while (T.getDebrisCount() > 0 && t < 3) { T.tick(1/60); t += 1/60; } r.smash.clearSec = +t.toFixed(2);
+    // hammers + rolling balls
+    T.startLevel(5); const hm = T.getObstacles().find(x => x.type === 'hammer'); let hammer = null; S.traverse(x => { if (!hammer && x.userData && x.userData.id === hm.id) hammer = x; });
+    const heads = []; S.traverse(x => { if (x.geometry && x.geometry.type === 'BoxGeometry') { const p = x.geometry.parameters; if (Math.abs(p.width - 2) < 0.01 && Math.abs(p.height - 1.2) < 0.01 && Math.abs(p.depth - 1.2) < 0.01) heads.push(x); } });
+    r.hammerHead = heads.length ? { color: '#' + heads[0].material.color.getHexString().toUpperCase(), stripes: heads[0].parent.children.filter(ch => ch.material && '#' + ch.material.color.getHexString().toUpperCase() === '#FF6F7D').length } : null;
+    T.startLevel(8); r.rollballs = T.getObstacles().filter(x => x.type === 'rollball').map(x => x.extra.diameter);
+    let ballMesh = null; S.traverse(x => { if (!ballMesh && x.geometry && x.geometry.type === 'SphereGeometry' && x.geometry.parameters.radius >= 0.75) ballMesh = x; });
+    r.rollballLook = ballMesh ? { color: '#' + ballMesh.material.color.getHexString().toUpperCase(), rings: ballMesh.children.filter(ch => '#' + ch.material.color.getHexString().toUpperCase() === '#1B1F55').length } : null;
+    // coins: lines of 5-8 at 1.5 m, ~0.4 m above the deck
+    const runs = []; for (let L = 1; L <= T.getLevelCount(); L++) { T.startLevel(L); const cs = []; S.traverse(x => { if (x.name === 'coin') cs.push(x); });
+      const ss = cs.map(x => { let best = 0, bd = 1e9; for (let s = 0; s < T.getTrackLength() + 6; s += 0.25) { const q = T.worldAt(s, 0, 0); const d = (q.x - x.position.x) ** 2 + (q.z - x.position.z) ** 2; if (d < bd) { bd = d; best = s; } } return best; }).sort((a, b) => a - b);
+      let n = 1; for (let i = 1; i <= ss.length; i++) { if (i < ss.length && Math.abs(ss[i] - ss[i - 1] - 1.5) < 0.3) n++; else { runs.push(n); n = 1; } } }
+    r.coinRuns = runs; T.startLevel(1); const c0 = []; S.traverse(x => { if (x.name === 'coin') c0.push(x); }); const face = c0[0].children.find(ch => ch.name === 'coin-face');
+    r.coinBottom = +(c0[0].position.y - face.geometry.parameters.radiusTop - T.getTrackInfo(7, 0).y).toFixed(3);
+    return r;
+  });
+  const between = (v, a, b) => v != null && v >= a && v <= b;
+  const L = (name, target, pass, measured) => { check('look', `${name}: ${target}`, pass, measured); gapRow('look', `${name}: ${target}`, typeof measured === 'string' ? measured : JSON.stringify(measured), pass); };
+  L('track body', 'navy #1B1F55 side 0.4 m deep', between(g.sideDepth, 0.38, 0.42) && g.navyColor === '#1B1F55', { sideDepth: g.sideDepth, color: g.navyColor });
+  L('edge band', '0.35 m: navy lip 0.05, yellow 0.10, navy 0.05, mint 0.15', g.yellowBand && g.mintBand && Math.abs(g.yellowBand[0] - 0.05) < 0.02 && Math.abs(g.yellowBand[1] - 0.15) < 0.02 && Math.abs(g.mintBand[0] - 0.2) < 0.02 && Math.abs(g.mintBand[1] - 0.35) < 0.02, { yellow: g.yellowBand, mint: g.mintBand });
+  const decks = g.widths.filter(x => typeof x === 'number'), rails = g.widths.filter(x => typeof x === 'string').map(x => +x.slice(1));
+  L('track width', 'decks 4.5-5 m, thin rails 0.5 m (split platforms 1.3-1.6)', decks.every(x => between(x, 4.5, 5)) && rails.every(x => x === 0.5 || between(x, 1.3, 1.6)) && rails.includes(0.5), { decks: [Math.min(...decks), Math.max(...decks)], rails: [...new Set(rails)] });
+  L('ground', '25 m below the lowest deck, 4 m line pattern', between(g.groundDrop, 24.5, 25.5) && Math.abs(g.groundSize / g.groundRepeat - 4) < 0.01, { drop: g.groundDrop, lineSpacing: g.groundSize / g.groundRepeat });
+  L('checkpoint', 'navy arch >= 4 m tall with mint strip', g.checkpoint && g.checkpoint.h >= 4 && g.checkpoint.hasMint && g.checkpoint.hasNavy, g.checkpoint);
+  L('finish', '5 m bulb ring, white flash, 40 candy confetti', between(g.finishDiameter, 4.9, 5.2) && g.confetti === 40 && g.flash && g.confettiColors.length >= 3, { ring: g.finishDiameter, confetti: g.confetti, colors: g.confettiColors, flash: g.flash });
+  L('smash', '6-8 chunks + 12 sparks per cube, clear within 1.5 s', between(g.smash.chunksPerCube, 6, 8) && g.smash.sparks % 12 === 0 && g.smash.sparks > 0 && g.smash.clearSec <= 1.55, g.smash);
+  L('hammer', 'navy 2 x 1.2 x 1.2 head with coral stripes', g.hammerHead && g.hammerHead.color === '#1B1F55' && g.hammerHead.stripes >= 2, g.hammerHead);
+  L('rolling ball', 'coral, navy stripes, 2 m', g.rollballs.length && g.rollballs.every(d => d === 2) && g.rollballLook && g.rollballLook.color === '#FF6F7D' && g.rollballLook.rings >= 2, { diameters: g.rollballs, look: g.rollballLook });
+  L('coins', 'lines of 5-8 at 1.5 m, ~0.4 m above the deck', g.coinRuns.filter(n => n >= 5 && n <= 8).length / g.coinRuns.length >= 0.85 && between(g.coinBottom, 0.3, 0.5), { runs: `${g.coinRuns.filter(n => n >= 5 && n <= 8).length}/${g.coinRuns.length} runs of 5-8`, short: [...new Set(g.coinRuns.filter(n => n < 5 || n > 8))], bottom: g.coinBottom });
+  // coin face pixels: median colour of the face within 6% of #FFD23F (AD ruling)
+  const px = await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.placeBall(4, 0, 0, 0); T.clearDrag(); for (let i = 0; i < 30; i++) T.tick(1/60);
+    const S = T.getScene(); const cs = []; S.traverse(x => { if (x.name === 'coin') cs.push(x); });
+    const c = cs.map(x => ({ x, p: T.projectPoint(x.position.x, x.position.y, x.position.z) })).filter(q => q.p.sy > 0 && q.p.sy < innerHeight).sort((a, b) => b.p.sy - a.p.sy)[0];
+    c.x.rotation.y = 0; T.tick(1/240); // face-on; render
+    const can = document.querySelector('canvas'), cv = document.createElement('canvas'); cv.width = can.width; cv.height = can.height; const ctx = cv.getContext('2d'); ctx.drawImage(can, 0, 0);
+    const sc = can.width / can.getBoundingClientRect().width; const p = T.projectPoint(c.x.position.x, c.x.position.y, c.x.position.z);
+    const e = T.projectPoint(c.x.position.x, c.x.position.y + 0.2, c.x.position.z); const rad = Math.max(1, Math.floor(Math.abs(p.sy - e.sy) * sc * 0.6));
+    const d = ctx.getImageData(Math.round(p.sx * sc) - rad, Math.round(p.sy * sc) - rad, 2 * rad + 1, 2 * rad + 1).data; const ch = [[], [], []];
+    for (let i = 0; i < d.length; i += 4) for (let k = 0; k < 3; k++) ch[k].push(d[i + k]);
+    const med = ch.map(a => a.sort((x, y) => x - y)[a.length >> 1]); return { med, rad, at: [Math.round(p.sx), Math.round(p.sy)] }; });
+  const tgt = [0xFF, 0xD2, 0x3F], dev = Math.max(...px.med.map((v, i) => Math.abs(v - tgt[i]) / 255));
+  L('coin face', 'median pixel within 6% of #FFD23F at 1180x820', dev <= 0.06, { median: '#' + px.med.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase(), maxDev: +dev.toFixed(3), sample: px });
+  // UI + speed feel
+  const ui = await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 10; i++) T.tick(1/60);
+    const rect = id => document.getElementById(id).getBoundingClientRect(); const pb = rect('progress-container'), lt = rect('level-title');
+    const streak = () => +getComputedStyle(document.querySelector('.left-streak')).opacity;
+    const slow = { fov: T.getCamera().fov, streak: document.querySelector('.left-streak').style.opacity || '0' };
+    T.setDrag(0, 1); for (let i = 0; i < 120; i++) T.tick(1/60); const fast = { v: T.getState().vs, fov: T.getCamera().fov, streak: document.querySelector('.left-streak').style.opacity, alpha: getComputedStyle(document.querySelector('.left-streak')).backgroundImage };
+    T.clearDrag(); T.finishNow(); const cb = rect('continue-button'); const bg = getComputedStyle(document.getElementById('continue-button')).backgroundColor;
+    return { pb: { w: pb.width / innerWidth, cx: (pb.left + pb.right) / 2 / innerWidth, top: pb.top / innerHeight }, labelAbove: lt.bottom <= pb.top + 1, slow, fast,
+      cont: { w: cb.width, h: cb.height, cx: (cb.left + cb.right) / 2 / innerWidth, cy: (cb.top + cb.bottom) / 2 / innerHeight, bg }, coinsShown: /Coins/.test(document.getElementById('coins-collected').textContent) }; });
+  L('UI', 'progress bar top centre 40% wide, level label above', between(ui.pb.w, 0.38, 0.42) && Math.abs(ui.pb.cx - 0.5) < 0.01 && ui.pb.top < 0.15 && ui.labelAbove, ui.pb);
+  L('UI', 'Level Complete: coins shown, mint Continue 220x64 bottom centre', ui.coinsShown && Math.abs(ui.cont.w - 220) < 1 && Math.abs(ui.cont.h - 64) < 1 && Math.abs(ui.cont.cx - 0.5) < 0.01 && ui.cont.cy > 0.7 && /62, 230, 176/.test(ui.cont.bg), ui.cont);
+  L('speed feel', '>= 10 m/s: FOV +4 deg, edge streaks at 8% alpha', ui.fast.v >= 10 && Math.abs(ui.fast.fov - ui.slow.fov - 4) < 0.3 && ui.fast.streak === '1' && /0\.08/.test(ui.fast.alpha) && ui.slow.streak !== '1', { slow: ui.slow, fast: { v: +ui.fast.v.toFixed(1), fov: +ui.fast.fov.toFixed(2), streak: ui.fast.streak } });
+  check('look', 'no page errors in look checks', o.errors.length === 0, o.errors.slice(0, 3));
+  await page.screenshot({ path: path.join(SHOTS, 'look-level-complete-1180x820.png') });
   await o.ctx.close();
 }
 
