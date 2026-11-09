@@ -37,6 +37,7 @@
   let finish = null;
   let planet = null;
   let crystals = [];
+  let skyFollow = null; // hills+planet group that stays ahead of camera
   let paused = false;
   let lastT = 0;
   let respawnT = 0;
@@ -59,13 +60,14 @@
     renderer.setClearColor(0x3A1D7A, 1);
     $('game').appendChild(renderer.domElement);
 
-    const key = new THREE.DirectionalLight(0xFFE2C4, 1.05);
-    key.position.set(-8, 14, 4);
+    const key = new THREE.DirectionalLight(0xFFE2C4, 1.55);
+    key.position.set(-6, 16, 2);
     scene.add(key);
-    const fill = new THREE.DirectionalLight(0x8E7CFF, 0.4);
-    fill.position.set(6, 4, -4);
+    const fill = new THREE.DirectionalLight(0x8E7CFF, 0.55);
+    fill.position.set(8, 6, -2);
     scene.add(fill);
-    scene.add(new THREE.AmbientLight(0x6a5a9a, 0.35));
+    scene.add(new THREE.AmbientLight(0xB8B0E8, 0.55));
+    scene.add(new THREE.HemisphereLight(0xFFB36B, 0x2A145C, 0.35));
 
     buildSky();
     buildBall();
@@ -75,52 +77,61 @@
   }
 
   function buildSky() {
-    // Gradient sky sphere via vertex colors
-    const geo = new THREE.SphereGeometry(180, 24, 16);
+    const geo = new THREE.SphereGeometry(220, 32, 24);
     const pos = geo.attributes.position;
     const cols = new Float32Array(pos.count * 3);
     const cTop = new THREE.Color(0x3A1D7A);
     const cMid = new THREE.Color(0xFF6F7D);
     const cHor = new THREE.Color(0xFFB36B);
     for (let i = 0; i < pos.count; i++) {
-      const y = pos.getY(i) / 180; // -1..1
-      const t = (y + 1) * 0.5; // 0 bottom .. 1 top
+      const y = pos.getY(i) / 220;
       let c;
-      if (t > 0.55) c = cTop.clone().lerp(cMid, (1 - t) / 0.45);
-      else c = cMid.clone().lerp(cHor, (0.55 - t) / 0.55);
+      if (y > 0.35) c = cMid.clone().lerp(cTop, (y - 0.35) / 0.65);
+      else if (y > -0.05) c = cMid.clone().lerp(cHor, Math.min(1, (0.35 - y) / 0.40));
+      else c = cHor.clone();
       cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b;
     }
     geo.setAttribute('color', new THREE.BufferAttribute(cols, 3));
-    const sky = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.BackSide, depthWrite: false }));
-    scene.add(sky);
+    scene.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      vertexColors: true, side: THREE.BackSide, depthWrite: false, fog: false
+    })));
 
-    // Hills
-    for (let i = 0; i < 8; i++) {
-      const h = new THREE.Mesh(
-        new THREE.ConeGeometry(18 + (i % 3) * 8, 22 + (i % 4) * 6, 5 + (i % 3)),
-        new THREE.MeshStandardMaterial({ color: i % 2 ? 0x7C3FC4 : 0x5B2E9E, flatShading: true })
-      );
-      h.position.set(-70 + i * 22, -8, -90 - (i % 3) * 20);
-      scene.add(h);
+    skyFollow = new THREE.Group();
+    const ridgeMatBack = new THREE.MeshStandardMaterial({ color: 0x5B2E9E, flatShading: true, fog: false, roughness: 1 });
+    const ridgeMatFront = new THREE.MeshStandardMaterial({ color: 0x7C3FC4, flatShading: true, fog: false, roughness: 1 });
+    function addRidge(localZ, y, mat, scale) {
+      const g = new THREE.Group();
+      const peaks = [-40, -24, -8, 8, 24, 40];
+      for (let i = 0; i < peaks.length; i++) {
+        const h = new THREE.Mesh(
+          new THREE.ConeGeometry((10 + (i % 3) * 4) * scale, (14 + (i % 4) * 5) * scale, 5),
+          mat
+        );
+        h.position.set(peaks[i] * scale, 0, (i % 2) * 6);
+        g.add(h);
+      }
+      g.position.set(0, y, localZ);
+      skyFollow.add(g);
     }
+    addRidge(90, -2, ridgeMatBack, 1.15);
+    addRidge(65, -1, ridgeMatFront, 0.95);
 
-    // Ringed planet
     planet = new THREE.Group();
-    const body = new THREE.Mesh(
-      new THREE.SphereGeometry(12, 24, 24),
-      new THREE.MeshStandardMaterial({ color: 0xFFD08A, roughness: 0.7 })
-    );
-    planet.add(body);
+    planet.add(new THREE.Mesh(
+      new THREE.SphereGeometry(10, 24, 24),
+      new THREE.MeshStandardMaterial({ color: 0xFFD08A, roughness: 0.65, fog: false, emissive: 0xFFD08A, emissiveIntensity: 0.12 })
+    ));
     const ring = new THREE.Mesh(
-      new THREE.RingGeometry(16, 21, 48),
-      new THREE.MeshStandardMaterial({ color: 0xFF8FB1, side: THREE.DoubleSide, transparent: true, opacity: 0.7 })
+      new THREE.RingGeometry(13, 18, 48),
+      new THREE.MeshStandardMaterial({ color: 0xFF8FB1, side: THREE.DoubleSide, transparent: true, opacity: 0.7, fog: false })
     );
-    ring.rotation.x = Math.PI / 2.4;
+    ring.rotation.x = Math.PI / 2.5;
+    ring.rotation.y = 0.35;
     planet.add(ring);
-    planet.position.set(-55, 38, -70);
-    scene.add(planet);
+    planet.position.set(-52, 32, 48);
+    skyFollow.add(planet);
+    scene.add(skyFollow);
 
-    // Crystals under track
     for (let i = 0; i < 18; i++) {
       const c = new THREE.Mesh(
         new THREE.OctahedronGeometry(0.45 + (i % 3) * 0.15),
@@ -134,15 +145,31 @@
 
   function buildBall() {
     ballMesh = new THREE.Mesh(
-      new THREE.SphereGeometry(BALL_R, 28, 28),
-      new THREE.MeshStandardMaterial({ color: 0xF4F2FF, roughness: 0.25, metalness: 0.05 })
+      new THREE.SphereGeometry(BALL_R, 36, 36),
+      new THREE.MeshStandardMaterial({
+        color: 0xFFFFFF,
+        roughness: 0.18,
+        metalness: 0.08,
+        emissive: 0xF4F2FF,
+        emissiveIntensity: 0.22
+      })
     );
     bandMesh = new THREE.Mesh(
-      new THREE.TorusGeometry(BALL_R * 0.92, 0.07, 10, 40),
-      new THREE.MeshStandardMaterial({ color: 0xFF6F7D, roughness: 0.4, emissive: 0xFF6F7D, emissiveIntensity: 0.15 })
+      new THREE.TorusGeometry(BALL_R * 0.95, 0.09, 12, 48),
+      new THREE.MeshStandardMaterial({
+        color: 0xFF6F7D,
+        roughness: 0.35,
+        metalness: 0.1,
+        emissive: 0xFF6F7D,
+        emissiveIntensity: 0.35
+      })
     );
     bandMesh.rotation.x = Math.PI / 2;
     ballMesh.add(bandMesh);
+    // soft fill light that follows the ball so pearl reads white
+    const ballFill = new THREE.PointLight(0xFFE8D8, 0.65, 8);
+    ballFill.position.set(0.6, 1.2, 0.4);
+    ballMesh.add(ballFill);
     scene.add(ballMesh);
   }
 
@@ -165,7 +192,8 @@
     window.addEventListener('resize', onResize);
     $('pause-button').addEventListener('click', () => {
       paused = !paused;
-      $('pause-button').textContent = paused ? '▶' : '⏸';
+      $('pause-button').classList.toggle('paused', paused);
+      $('pause-button').setAttribute('aria-label', paused ? 'Resume' : 'Pause');
     });
     $('continue-button').addEventListener('click', () => {
       $('level-complete').style.display = 'none';
@@ -210,7 +238,7 @@
     $('progress-bar').style.width = '0%';
     $('level-complete').style.display = 'none';
     buildLevel(n);
-    state.ball.y = sampleTrack(0).y + BALL_R + 0.02;
+    state.ball.y = sampleTrack(0, 0).y + BALL_R + 0.02;
     syncBallMesh();
   }
 
@@ -250,16 +278,17 @@
       addFinish(0, 1.1, 95);
       state.trackEnd = 100;
     } else if (n === 4) {
+      // two parallel thin rails (x = ±0.85), still beatable down the center gap-bridge via either rail
       segments = [
         seg(0, 22, 0, 0, 4, 'flat'),
         seg(22, 26, 0, 1.5, 3.5, 'ramp'),
-        seg(26, 58, 1.5, 1.5, 0.9, 'rail'),
+        seg(26, 58, 1.5, 1.5, 0.7, 'dualrail', { railXs: [-0.85, 0.85] }),
         seg(58, 64, 1.5, 0, 3.5, 'ramp'),
         seg(64, 100, 0, 0, 4, 'flat'),
       ];
-      addCheckpoint(0, 0.05, 18);
+      addCheckpoint(0, 0.02, 18);
       addJumpPad(0, 0.05, 72);
-      for (let i = 0; i < 8; i++) addCoin(0, 2.6, 28 + i * 3.5);
+      for (let i = 0; i < 8; i++) addCoin((i % 2 ? 0.85 : -0.85), 2.55, 28 + i * 3.5);
       addFinish(0, 1.1, 95);
       state.trackEnd = 100;
     } else {
@@ -285,18 +314,35 @@
     buildTrackMeshes();
   }
 
-  function seg(z0, z1, y0, y1, width, type) {
-    return { z0, z1, y0, y1, width, type };
+  function seg(z0, z1, y0, y1, width, type, extra) {
+    return Object.assign({ z0, z1, y0, y1, width, type }, extra || {});
   }
 
-  function sampleTrack(z) {
+  function sampleTrack(z, x) {
     for (const s of segments) {
       if (z >= s.z0 && z <= s.z1) {
         const t = (z - s.z0) / Math.max(1e-6, s.z1 - s.z0);
-        return { y: s.y0 + (s.y1 - s.y0) * t, width: s.width, type: s.type, slope: (s.y1 - s.y0) / Math.max(1e-6, s.z1 - s.z0) };
+        const y = s.y0 + (s.y1 - s.y0) * t;
+        const slope = (s.y1 - s.y0) / Math.max(1e-6, s.z1 - s.z0);
+        if (s.type === 'dualrail' && s.railXs) {
+          const half = s.width / 2;
+          let on = false;
+          let nearest = s.railXs[0];
+          let best = 1e9;
+          for (const rx of s.railXs) {
+            const d = Math.abs((x == null ? 0 : x) - rx);
+            if (d < best) { best = d; nearest = rx; }
+            if (d <= half + BALL_R * 0.15) on = true;
+          }
+          // Effective support width around nearest rail; off-rail = void for fall checks
+          return {
+            y, width: on ? s.width : 0, type: on ? 'rail' : 'gap', slope,
+            dual: true, railXs: s.railXs, nearestRail: nearest, railHalf: half
+          };
+        }
+        return { y, width: s.width, type: s.type, slope };
       }
     }
-    // between segments = gap/void
     return { y: -999, width: 0, type: 'gap', slope: 0 };
   }
 
@@ -308,6 +354,23 @@
     const matYel = new THREE.MeshStandardMaterial({ color: 0xFFD23F, emissive: 0xFFD23F, emissiveIntensity: 0.6, roughness: 0.5 });
     const matPost = new THREE.MeshStandardMaterial({ color: 0x1B1F55, roughness: 0.7 });
 
+    function addDeck(x, w, len, midY, midZ, pitch) {
+      const deck = new THREE.Mesh(new THREE.BoxGeometry(w, 0.25, len), matTop);
+      deck.position.set(x, midY - 0.125, midZ);
+      deck.rotation.x = -pitch;
+      trackRoot.add(deck);
+      for (const side of [-1, 1]) {
+        const mint = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, len), matMint);
+        mint.position.set(x + side * (w / 2 + 0.02), midY + 0.02, midZ);
+        mint.rotation.x = -pitch;
+        trackRoot.add(mint);
+        const yel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, len), matYel);
+        yel.position.set(x + side * (w / 2 - 0.08), midY + 0.03, midZ);
+        yel.rotation.x = -pitch;
+        trackRoot.add(yel);
+      }
+    }
+
     for (const s of segments) {
       const len = s.z1 - s.z0;
       const midZ = (s.z0 + s.z1) / 2;
@@ -315,39 +378,31 @@
       const pitch = Math.atan2(s.y1 - s.y0, len);
       const w = s.width;
 
-      const deck = new THREE.Mesh(new THREE.BoxGeometry(w, 0.25, len), matTop);
-      deck.position.set(0, midY - 0.125, midZ);
-      deck.rotation.x = -pitch;
-      trackRoot.add(deck);
-
-      // edge stripes
-      const stripeLen = len;
-      for (const side of [-1, 1]) {
-        const mint = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.08, stripeLen), matMint);
-        mint.position.set(side * (w / 2 + 0.02), midY + 0.02, midZ);
-        mint.rotation.x = -pitch;
-        trackRoot.add(mint);
-        const yel = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.09, stripeLen), matYel);
-        yel.position.set(side * (w / 2 - 0.08), midY + 0.03, midZ);
-        yel.rotation.x = -pitch;
-        trackRoot.add(yel);
-      }
-
-      // seams every 4m
-      for (let z = s.z0 + 4; z < s.z1; z += 4) {
-        const sy = sampleTrack(z).y;
-        const seam = new THREE.Mesh(new THREE.BoxGeometry(w * 0.98, 0.03, 0.08), matSeam);
-        seam.position.set(0, sy + 0.01, z);
-        trackRoot.add(seam);
-      }
-
-      // thin rail visual posts on rail type
-      if (s.type === 'rail') {
-        for (let z = s.z0; z <= s.z1; z += 2.5) {
+      if (s.type === 'dualrail' && s.railXs) {
+        for (const rx of s.railXs) {
+          addDeck(rx, w, len, midY, midZ, pitch);
+          for (let z = s.z0; z <= s.z1; z += 2.5) {
+            const sy = s.y0 + (s.y1 - s.y0) * ((z - s.z0) / Math.max(1e-6, len));
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), matPost);
+            post.position.set(rx, sy + 0.35, z);
+            trackRoot.add(post);
+          }
+        }
+      } else {
+        addDeck(0, w, len, midY, midZ, pitch);
+        for (let z = s.z0 + 4; z < s.z1; z += 4) {
           const sy = sampleTrack(z).y;
-          const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), matPost);
-          post.position.set(0, sy + 0.35, z);
-          trackRoot.add(post);
+          const seam = new THREE.Mesh(new THREE.BoxGeometry(w * 0.98, 0.03, 0.08), matSeam);
+          seam.position.set(0, sy + 0.01, z);
+          trackRoot.add(seam);
+        }
+        if (s.type === 'rail') {
+          for (let z = s.z0; z <= s.z1; z += 2.5) {
+            const sy = sampleTrack(z).y;
+            const post = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.7, 0.12), matPost);
+            post.position.set(0, sy + 0.35, z);
+            trackRoot.add(post);
+          }
         }
       }
     }
@@ -408,14 +463,19 @@
   }
 
   function addCheckpoint(x, y, z) {
+    // Flat ring lying on the track (not a raised disc)
+    const surfY = sampleTrack(z, x).y;
     const mesh = new THREE.Mesh(
-      new THREE.RingGeometry(0.9, 1.15, 32),
-      new THREE.MeshStandardMaterial({ color: 0xFFD23F, side: THREE.DoubleSide, emissive: 0xFFD23F, emissiveIntensity: 0.55 })
+      new THREE.RingGeometry(0.95, 1.25, 40),
+      new THREE.MeshStandardMaterial({
+        color: 0xFFD23F, side: THREE.DoubleSide, emissive: 0xFFD23F, emissiveIntensity: 0.7,
+        transparent: true, opacity: 0.95, depthWrite: false
+      })
     );
     mesh.rotation.x = -Math.PI / 2;
-    mesh.position.set(x, y + 0.04, z);
+    mesh.position.set(x, surfY + 0.03, z);
     scene.add(mesh);
-    checkpoints.push({ mesh, passed: false, x, y: y + BALL_R + 0.05, z });
+    checkpoints.push({ mesh, passed: false, x, y: surfY + BALL_R + 0.05, z });
   }
 
   function addSpeedPad(x, y, z) {
@@ -521,12 +581,17 @@
     }
 
     // playing
-    const track = sampleTrack(b.z);
+    const track = sampleTrack(b.z, b.x);
     const grounded = track.type !== 'gap' && b.y <= track.y + BALL_R + 0.12 && b.vy <= 0.5;
 
     // controls
     const steer = grounded ? STEER : AIR_STEER;
-    b.vx += drag.nx * steer * dt;
+    let nx = drag.nx;
+    // If entering dual rails near center, bias toward a rail so the bot stays beatable
+    if (track.dual && Math.abs(b.x) < 0.25 && Math.abs(drag.nx) < 0.05) {
+      nx = (track.nearestRail >= 0 ? 1 : -1) * 0.55;
+    }
+    b.vx += nx * steer * dt;
     if (drag.ny >= 0) b.vz += drag.ny * ACCEL * dt;
     else b.vz += drag.ny * ACCEL * 0.85 * dt; // brake / reverse pull
 
@@ -544,12 +609,15 @@
     b.z += b.vz * dt;
 
     // ground resolve
-    const t2 = sampleTrack(b.z);
+    const t2 = sampleTrack(b.z, b.x);
     if (t2.type !== 'gap' && b.y - BALL_R < t2.y) {
       b.y = t2.y + BALL_R;
       if (b.vy < 0) b.vy *= -0.08; // barely bounce
       onGround = true;
-      // friction
+      // gently pull toward rail center on dual rails so auto-bot stays beatable
+      if (t2.dual && t2.nearestRail != null) {
+        b.x += (t2.nearestRail - b.x) * Math.min(1, 6 * dt);
+      }
       const fr = Math.exp(-FRICTION * dt);
       b.vx *= fr;
       if (drag.ny < 0.05) b.vz *= Math.exp(-0.35 * dt);
@@ -558,13 +626,23 @@
     }
 
     // edge / void fall
-    const half = Math.max(0, t2.width) * 0.5;
-    const offEdge = t2.type !== 'gap' && Math.abs(b.x) > half + BALL_R * 0.2;
-    if (offEdge) beginFall();
-    // missed gap: once below the lower of nearby supports, count as fallen
-    if (t2.type === 'gap') {
-      const support = sampleNearSupport(b.z);
-      if (b.y < support - 1.5) beginFall();
+    if (t2.dual) {
+      // off both rails
+      if (t2.type === 'gap') {
+        const support = sampleNearSupport(b.z);
+        if (b.y < support - 1.2) beginFall();
+      } else {
+        const half = t2.railHalf + BALL_R * 0.2;
+        if (Math.abs(b.x - t2.nearestRail) > half) beginFall();
+      }
+    } else {
+      const half = Math.max(0, t2.width) * 0.5;
+      const offEdge = t2.type !== 'gap' && Math.abs(b.x) > half + BALL_R * 0.2;
+      if (offEdge) beginFall();
+      if (t2.type === 'gap') {
+        const support = sampleNearSupport(b.z);
+        if (b.y < support - 1.5) beginFall();
+      }
     }
     if (b.y < FALL_Y) beginFall();
 
@@ -624,7 +702,7 @@
     } else {
       state.ball.x = 0;
       state.ball.z = 0;
-      state.ball.y = sampleTrack(0).y + BALL_R + 0.05;
+      state.ball.y = sampleTrack(0, 0).y + BALL_R + 0.05;
     }
     state.ball.vx = 0; state.ball.vy = 0; state.ball.vz = 0;
     state.status = 'playing';
@@ -723,6 +801,10 @@
     const k = 1 - Math.exp(-dt / 0.15);
     camera.position.lerp(target, k);
     camera.lookAt(b.x, b.y + 0.4, b.z + 6);
+    if (skyFollow) {
+      skyFollow.position.x = camera.position.x;
+      skyFollow.position.z = camera.position.z + 8;
+    }
     const spd = Math.hypot(b.vx, b.vz);
     const fov = 62 + (Math.min(1, spd / MAX_SPEED) * 6);
     camera.fov += (fov - camera.fov) * 0.12;
