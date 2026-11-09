@@ -453,6 +453,12 @@
       lift: 5.6 - o.length * Math.cos(theta),
       vr: o.length * Math.cos(theta) * omega };
   }
+  function acrossMotion(o, time) {
+    const range = Math.max(0.5, sampleTrack(o.s0, 0).half - o.diameter / 2);
+    const u = (time * o.speed + o.phase) / (2 * range);
+    const f = ((u % 2) + 2) % 2;
+    return { r: -range + (f <= 1 ? f : 2 - f) * 2 * range, vr: (f <= 1 ? 1 : -1) * o.speed };
+  }
   function updateObstacle(o, dt) {
     let lift = o.h / 2;
     if (o.type === 'sliding' || o.type === 'wall' || o.type === 'bar') {
@@ -466,11 +472,8 @@
       o.arm.rotation.z = -m.theta;
     } else if (o.type === 'rollball') {
       if (o.mode === 'across') {
-        const range = Math.max(0.5, sampleTrack(o.s0, 0).half - o.diameter / 2);
-        const u = (state.simTime * o.speed + o.phase) / (2 * range);
-        const f = ((u % 2) + 2) % 2;
-        o.r = -range + (f <= 1 ? f : 2 - f) * 2 * range;
-        o.vr = (f <= 1 ? 1 : -1) * o.speed; o.s = o.s0; o.vs = 0;
+        const m = acrossMotion(o, state.simTime);
+        o.r = m.r; o.vr = m.vr; o.s = o.s0; o.vs = 0;
       } else {
         const length = Math.max(1, o.s1 - o.s0);
         o.s = o.s1 - ((state.simTime * o.speed + o.phase) % length);
@@ -605,14 +608,26 @@
       if (o.type === 'sliding' || o.type === 'wall') {
         const m = barMotion(o, arrival), target = m.r >= 0 ? -half + 0.65 : half - 0.65;
         hint.r = mix(hint.r, target, blend);
-      } else if (o.type === 'hammer') {
-        const m = hammerMotion(o, arrival);
-        let target = m.r >= 0 ? -half + 0.65 : half - 0.65;
-        if (Math.abs(m.r) < 0.4) target = m.vr >= 0 ? -half + 0.65 : half - 0.65;
-        hint.r = mix(hint.r, target, blend);
-        if (ds < 9 && Math.abs(m.r - state.r) < 1.6 && Math.abs(state.r - target) > 0.6) {
-          hint.throttle = 0; hint.brakeTo = 3;
+      } else if (o.type === 'hammer' || (o.type === 'rollball' && o.mode === 'across')) {
+        // Plan a lane: the head must stay > 1.4 m from the lane for the whole time the ball is
+        // within 1 m of the pivot; the lane must be reachable in time. Brake if no lane works.
+        const lanes = [-half + 0.65, 0, half - 0.65].sort((x, y) => Math.abs(x - state.r) - Math.abs(y - state.r));
+        const clear = (lane, v) => {
+          for (let k = -1.2; k <= 1.2; k += 0.2) {
+            const tt = state.simTime + Math.max(0, ds + k) / Math.max(v, 2);
+            const or = o.type === 'hammer' ? hammerMotion(o, tt).r : acrossMotion(o, tt).r;
+            if (Math.abs(or - lane) < (o.type === 'hammer' ? 1.4 : o.diameter / 2 + 0.75)) return false;
+          }
+          return true;
+        };
+        const reach = (lane, v) => Math.abs(lane - state.r) / (C.LAT_MAX * 0.75) + 0.15 <= Math.max(0, ds - 1) / Math.max(v, 2);
+        let pick = null;
+        for (const v of [speed, speed * 0.8, speed * 0.6, speed * 0.4]) {
+          pick = lanes.find(l => (reach(l, v) || Math.abs(l - state.r) < 0.3) && clear(l, v));
+          if (pick != null) { if (v < speed - 0.5 && ds < 12) { hint.throttle = 0; hint.brakeTo = v; } break; }
         }
+        if (pick == null) pick = lanes[0];
+        hint.r = mix(hint.r, pick, ds < 12 ? 1 : blend);
       } else if (o.type === 'rollball') {
         const target = o.r >= 0 ? -half + 0.6 : half - 0.6;
         hint.r = mix(hint.r, target, blend);
