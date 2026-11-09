@@ -1,0 +1,11 @@
+import { chromium } from 'playwright'; import { serve } from './lib.mjs';
+const root = (await import('path')).resolve(process.argv[2]); const code = process.argv[3];
+const { server, base } = await serve(root);
+const b = await chromium.launch({ args: ['--use-gl=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'] });
+const p = await (await b.newContext({ viewport: { width: 1180, height: 820 } })).newPage();
+const errs = []; p.on('pageerror', e => errs.push(String(e))); p.on('console', m => { if (m.type() === 'error') errs.push(m.text()); });
+await p.goto(base); await p.waitForFunction(() => window.__test);
+await p.evaluate(() => { window.__test.manual = true; });
+const r = await p.evaluate(code);
+console.log(JSON.stringify(r, null, 1)); console.log('errors', errs.slice(0, 3));
+await b.close(); server.close();
