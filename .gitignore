@@ -1,0 +1,6 @@
+node_modules/
+tools/accept-results.json
+*.venice.html
+*.venice.js
+venice-out.md
+task.md
