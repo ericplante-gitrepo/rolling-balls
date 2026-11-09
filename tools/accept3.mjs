@@ -319,7 +319,7 @@ if (want('physics')) {
     const bb = T.getObstacles().filter(o => o.type === 'bar')[0]; T.placeBall(bb.s, bb.r > 0 ? bb.r - 2.6 : bb.r + 2.6, 0, 0); T.clearDrag(); let fellMiss = false; for (let i = 0; i < 60 * 3; i++) { T.tick(1/60); if (T.getState().fallenCount > 0) { fellMiss = true; break; } }
     r.bars = { period: barPeriod, carried: onAll, maxRelToBar: +maxRel.toFixed(3), carriedSpan: +(rmax - rmin).toFixed(2), fellWhenMissed: fellMiss };
     // G8 thin rails: width and drag sensitivity at 12 m/s (screen 1180 wide; joystick radius as the game computes)
-    const W = 1180, H = 820; const Rj = Math.max(70, Math.min(140, 0.16 * Math.min(W, H))); const dz = n => Math.abs(n) <= 0.08 ? 0 : Math.sign(n) * (Math.abs(n) - 0.08) / 0.92;
+    const W = 1180, H = 820; const Rj = 0.16 * Math.min(W, H); const dz = n => Math.abs(n) <= 0.08 ? 0 : Math.sign(n) * (Math.abs(n) - 0.08) / 0.92;
     const railLvl = { name: 'rails', pieces: [{ len: 30 }, { kind: 'rails', len: 80, width: 0.5, rails: [0], guard: 'none' }, { len: 30 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] };
     const railTry = (frac, hold) => { T.loadCustomLevel(railLvl); T.placeBall(34, 0, 12, 0); const nx = dz(Math.min(1, frac * W / Rj)); let tt = 0, fell = false;
       for (let i = 0; i < 240; i++) { const s0 = T.getState(); T.setDrag(tt < hold ? nx : 0, 0); T.setVelocity(12, s0.vr, s0.vy); T.tick(1/120); tt += 1/120; if (T.getState().fallenCount > 0) { fell = true; break; } }
@@ -406,7 +406,9 @@ if (want('physics')) {
   const rl = m.rails;
   const g8 = check('G8', 'thin rails 0.4-0.6 m; small (3%) drag stays on, big (15%) drag falls at 12 m/s', rl.width >= 0.4 && rl.width <= 0.6 && !rl.small.fell && rl.big.fell, rl);
   const thr = rl.sweep.filter(x => !x.fell).map(x => x.frac); 
-  gapRow('8 Thin rails', '0.4-0.6 m; drags > ~1/10 width fall', `${rl.width} m; largest 0.2 s drag that stays on: ${thr.length ? Math.max(...thr) * 100 + '%' : 'none'} of width`, g8);
+  // Spec: staying on needs drags under ~1/10 screen width, so a 0.2 s drag of 8% should still stay on. Reported honestly (open gap).
+  const g8spec = thr.length && Math.max(...thr) >= 0.08;
+  gapRow('8 Thin rails', '0.4-0.6 m; drags under ~1/10 width stay on (8% must stay on)', `${rl.width} m; largest 0.2 s drag that stays on: ${thr.length ? Math.max(...thr) * 100 + '%' : 'none'} of width`, g8 && g8spec);
   // G9
   const rs = m.respawnStart, rc = m.respawnCP;
   const g9 = check('G9', 'respawn 2.0 s at rest at last checkpoint (else start)', rs.respawnSec >= 1.95 && rs.respawnSec <= 2.06 && rs.respawnS < 1 && rs.speedAfter < 0.01 && rc.cpIndex >= 0 && rc.respawnSec >= 1.95 && rc.respawnSec <= 2.06 && Math.abs(rc.respawnS - 40) < 1 && rc.speedAfter < 0.01, { rs, rc });
