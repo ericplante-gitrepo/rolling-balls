@@ -1,11 +1,17 @@
 (function () {
   'use strict';
 
+  // TOP_SPEED is the one speed knob (Eric, Nov 9: "higher top speed", 12 -> 16 m/s).
+  // Everything speed-dependent below is derived from it so retuning stays one edit.
+  const TOP_SPEED = 16;
   const C = {
-    BALL_R: 0.45, GRAVITY: 22, MAX_SPEED: 12, ACCEL: 12, BRAKE: 16,
-    ROLL_DRAG: 0.15, COAST_DRAG: 0.55, DOWNHILL_CAP: 15,
-    PAD_SPEED: 16, PAD_DURATION: 1.2, PAD_VY: 10.5,
-    LAT_MAX: 6.5, LAT_RESPONSE: 12, AIR_RESPONSE: 2.5,
+    BALL_R: 0.45, GRAVITY: 22, MAX_SPEED: TOP_SPEED,
+    ACCEL: TOP_SPEED, // 0 -> 90% of top speed in ~1.4 s at any top speed
+    BRAKE: TOP_SPEED * 4 / 3, // full pull-back stops from top speed in ~0.65 s
+    ROLL_DRAG: 0.15, COAST_DRAG: 0.55, DOWNHILL_CAP: TOP_SPEED + 3,
+    PAD_SPEED: TOP_SPEED + 4, PAD_DURATION: 1.2, PAD_VY: 10.5,
+    FAST_SPEED: 10, // FOV widening + edge streaks from here (VISUAL_GAPS 12)
+    LAT_MAX: 6.5 * Math.sqrt(TOP_SPEED / 12), /* more sideways authority at higher speed */ LAT_RESPONSE: 12, AIR_RESPONSE: 2.5,
     SLOPE_G: 10, LAT_G: 22, DOWNHILL_DRAG: 0.05, UPHILL_DRIVE_CUT: 0.85, KNOCK_T: 0.6, BANK_DAMP: 4, RESPAWN_S: 2, INPUT_GRACE: 0.4,
     SIDE_T: 0.25, FIXED_DT: 1 / 120, CAMERA_BEHIND: 8.5,
     CAMERA_ABOVE: 2.3, LOOK_AHEAD: 10, LOOK_HEIGHT: 2.1, CAMERA_LATERAL: 0.6, FOV: 60, FAST_FOV: 64,
@@ -192,7 +198,7 @@
     } else if (n === 6) {
       add(16); ob('jump', 44); add(7, { kind: 'gap', gapDy: -0.5 });
       add(25); d.checkpoints.push(67); ob('speed', 71);
-      add(17, { grade: 0.2 }); add(7, { kind: 'gap', gapDy: -1.5 });
+      add(12, { grade: 0.2 }); add(6, { kind: 'gap', gapDy: -2.2 });
       add(24, { grade: -0.25 }); curve(60); add(55);
     } else if (n === 7) {
       const s = add(30, { kind: 'rails', width: 1.35, rails: [0, 1.5] });
@@ -353,7 +359,7 @@
       g.setAttribute('position', new THREE.Float32BufferAttribute(batches[name], 3));
       g.computeVertexNormals();
       const material = mats[name]; material.side = THREE.DoubleSide;
-      root.add(new THREE.Mesh(g, material));
+      const mesh = new THREE.Mesh(g, material); mesh.name = 'track-' + name; root.add(mesh);
     }
   }
   function buildGround() {
@@ -367,7 +373,7 @@
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(300, 300);
     const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200),
       mat(0xFFFFFF, { map: texture }));
-    ground.rotation.x = -Math.PI / 2; ground.position.y = lowest - 25; root.add(ground);
+    ground.name = 'ground'; ground.rotation.x = -Math.PI / 2; ground.position.y = lowest - 25; root.add(ground);
   }
 
   function addObstacle(source) {
@@ -378,7 +384,7 @@
     };
     if (o.s === undefined) o.s = o.s0 || 0;
     o.baseS = o.s; o.baseR = o.r; o.vr = 0; o.vs = 0;
-    const g = new THREE.Group(); root.add(g); o.mesh = g;
+    const g = new THREE.Group(); root.add(g); o.mesh = g; g.name = o.type;
     if (o.type === 'hammer') {
       o.w = 2; o.h = 1.2; o.d = 1.2;
       const half = sampleTrack(o.s, 0).half;
@@ -508,19 +514,21 @@
       const light = box(0.04, 3.8, 0.2, mats.mint, g);
       light.position.set(sign * (half - 0.1), 2, 0);
     }
-    const top = box(half * 2 + 0.2, 0.18, 0.18, mats.navy, g); top.position.y = 4;
+    const top = box(half * 2 + 0.2, 0.18, 0.18, mats.navy, g); top.position.y = 4; g.name = 'checkpoint';
     checkpoints.push({ s, mesh: ring, passed: false });
   }
   function addCoin(s, r) {
     const g = new THREE.Group(); root.add(g); setObject(g, s, r, 0.7);
     const face = new THREE.Mesh(new THREE.CylinderGeometry(0.265, 0.265, 0.07, 16),
-      mat(0xFFD23F, { emissive: 0xFFD23F, emissiveIntensity: 0.5 }));
-    face.rotation.x = Math.PI / 2; g.add(face);
+      // Art Director (Nov 9): unlit, flat #FFD23F over the whole face, so it never reads mustard.
+      new THREE.MeshBasicMaterial({ color: 0xFFD23F, fog: false }));
+    face.name = 'coin-face';
+    face.rotation.x = Math.PI / 2; g.add(face); g.name = 'coin';
     g.add(new THREE.Mesh(new THREE.TorusGeometry(0.276, 0.022, 6, 20), mat(0xE0A800)));
     coins.push({ s, r, mesh: g, collected: false });
   }
   function addFinish() {
-    const g = new THREE.Group(); root.add(g); setObject(g, finishS, 0, 2.5);
+    const g = new THREE.Group(); root.add(g); setObject(g, finishS, 0, 2.5); g.name = 'finish';
     g.add(new THREE.Mesh(new THREE.TorusGeometry(2.4, 0.075, 8, 64), emissive(0x9AF0FF)));
     for (let i = 0; i < 16; i++) {
       const bulb = sphere(0.12, mats.white, g, 8), a = i * Math.PI / 8;
@@ -535,10 +543,11 @@
       new THREE.LineBasicMaterial({ color: 0x9AF0FF, transparent: true, opacity: 0.8 })));
   }
 
-  function burst(position, color, count, sparks = 0) {
+  function burst(position, color, count, sparks = 0, kind = 'chunk') {
     for (let i = 0; i < count + sparks; i++) {
       const size = i >= count ? 0.045 : 0.12 + random() * 0.09;
       const m = box(size, size, size, mat(color || palette[i % 4], { transparent: true }));
+      m.name = i >= count ? 'spark' : kind;
       m.position.copy(position);
       debris.push({ mesh: m, age: 0, vx: (random() - 0.5) * 8,
         vy: 3 + random() * 6, vz: (random() - 0.5) * 8 });
@@ -669,7 +678,7 @@
   function completeLevel() {
     if (state.status === 'complete') return;
     state.status = 'complete'; state.progress = 1; clearInput();
-    burst(ball.position, null, 40);
+    burst(ball.position, null, 40, 0, 'confetti');
     $('coins-collected').textContent = 'Coins: ' + state.coins;
     $('level-complete').style.display = 'block';
     const flash = document.createElement('div');
@@ -997,7 +1006,7 @@
       camYaw = Math.atan2(look.x - camera.position.x, look.z - camera.position.z);
     }
     camera.lookAt(look);
-    const fast = state.status === 'playing' && state.vs >= 10;
+    const fast = state.status === 'playing' && state.vs >= C.FAST_SPEED;
     camera.fov += ((fast ? C.FAST_FOV : C.FOV) - camera.fov) * damp(dt, C.FOV_TAU);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld(true); placePlanet();
     hills.position.set(camera.position.x, camera.position.y - 12, camera.position.z);
@@ -1210,7 +1219,8 @@
         pitch: Math.atan2(dy, Math.hypot(dx, dz)),
         lookX: look.x, lookY: look.y, lookZ: look.z };
     },
-    getConfig: () => ({ ...C }), getPlanetScreen
+    getConfig: () => ({ ...C }), getPlanetScreen,
+    getScene: () => scene, getDebrisCount: () => debris.length
   };
   window.__test = test;
 

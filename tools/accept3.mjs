@@ -202,7 +202,7 @@ if (want('physics')) {
     for (let i = 0; i < 30; i++) { T.setDrag(1, 0.5); T.tick(1/60); tl += 1/60; if (tLat === null && T.getState().vr >= 0.9 * C.LAT_MAX) tLat = +tl.toFixed(3); }
     T.setDrag(0, 0.5); const rr = T.getState().r; run(60); r.lateral = { t90: tLat, releaseDrift: +Math.abs(T.getState().r - rr).toFixed(3) };
     // guard rail at top speed (pad speed 16) on a straight
-    T.loadCustomLevel(flat()); T.placeBall(10, 0, 16, 0); let maxR = 0, fell = false, bounced = false, pv = 0;
+    T.loadCustomLevel(flat()); T.placeBall(10, 0, C.PAD_SPEED, 0); let maxR = 0, fell = false, bounced = false, pv = 0;
     for (let i = 0; i < 90; i++) { T.setDrag(1, 1); T.tick(1/60); const s = T.getState(); maxR = Math.max(maxR, Math.abs(s.r)); if (s.status !== 'playing') fell = true; if (pv > 1 && s.vr < 0) bounced = true; pv = s.vr; }
     r.rail = { maxAbsR: +maxR.toFixed(3), half: T.getTrackInfo(10, 0).half, fell, bounced };
 
@@ -212,19 +212,19 @@ if (want('physics')) {
       T.placeBall(cp.s0 - 12, 0, v, 0); let maxOut = 0, maxRise = 0, left = false, exitT = null, recenter = null, tt = 0; const sgn = Math.sign(deg);
       for (let i = 0; i < 60 * 8; i++) { const st = T.getState();
         // hold speed v with throttle only up to v (no steering)
-        T.setDrag(0, hold ? 1 : 0); T.tick(1/60); tt += 1/60; const s = T.getState();
+        T.setDrag(0, hold ? (st.vs < v ? 1 : 0) : 0); T.tick(1/60); tt += 1/60; const s = T.getState();
         if (s.status !== 'playing') { left = true; break; }
         if (s.s > cp.s0 + 3 && s.s < cp.s1 - 3) { const out = -s.r * sgn; maxOut = Math.max(maxOut, out); const info = T.getTrackInfo(s.s, s.r); const info0 = T.getTrackInfo(s.s, 0); maxRise = Math.max(maxRise, info.y - info0.y); }
         if (s.s >= cp.s1 && exitT === null) exitT = tt;
         if (exitT !== null && recenter === null) { const cam = T.getCamera(); const hd = T.getTrackInfo(s.s, 0).heading; let d = Math.abs(((cam.yaw - hd) + Math.PI * 3) % (Math.PI * 2) - Math.PI); if (d < 5 * Math.PI / 180) recenter = +(tt - exitT).toFixed(3); }
         if (exitT !== null && tt - exitT > 1.5) break; }
       return { R, deg, bank, v, maxOutward: +maxOut.toFixed(2), maxRise: +maxRise.toFixed(2), left, recenterSec: recenter }; };
-    r.curve = [curveRun(12, 90, 30, 11, true), curveRun(12, -90, 30, 11, true), curveRun(8, 60, 35, 10, true), curveRun(15, 45, 20, 12, true), curveRun(12, 90, 30, 16, true)];
+    r.curve = [curveRun(12, 90, 30, 11, true), curveRun(12, -90, 30, 11, true), curveRun(8, 60, 35, 10, true), curveRun(15, 45, 20, 12, true), curveRun(12, 90, 30, C.MAX_SPEED, true)];
     // G2 slopes
     const slopeLvl = (g, len) => ({ name: 'slope', pieces: [{ len: 20 }, { len, grade: g }, { len: 40 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] });
     T.loadCustomLevel(slopeLvl(-0.15, 90)); T.placeBall(21, 0, 8, 0); T.clearDrag(); run(180); r.downhill15 = { from: 8, after3s: +T.getState().vs.toFixed(2), gain: +(T.getState().vs - 8).toFixed(2) };
-    T.loadCustomLevel(slopeLvl(-0.25, 200)); T.placeBall(21, 0, 10, 0); let vmax = 0; T.setDrag(0, 1); run(60 * 6, 1/60, () => { const s = T.getState(); if (s.s > 215) return false; vmax = Math.max(vmax, s.vs); }); r.downhill25 = { vmax: +vmax.toFixed(2), cap: C.DOWNHILL_CAP };
-    T.loadCustomLevel(slopeLvl(0.20, 80)); T.placeBall(20.5, 0, 12, 0); T.setDrag(0, 1); run(120); const vu = T.getState().vs; r.uphill20 = { from: 12, after2s: +vu.toFixed(2), lossPct: +(100 * (12 - vu) / 12).toFixed(1) };
+    T.loadCustomLevel(slopeLvl(-0.25, 260)); T.placeBall(21, 0, 10, 0); let vmax = 0; T.setDrag(0, 1); run(60 * 6, 1/60, () => { const s = T.getState(); if (s.s > 275) return false; vmax = Math.max(vmax, s.vs); }); r.downhill25 = { vmax: +vmax.toFixed(2), cap: C.DOWNHILL_CAP };
+    T.loadCustomLevel(slopeLvl(0.20, 80)); T.placeBall(20.5, 0, C.MAX_SPEED, 0); T.setDrag(0, 1); run(120); const vu = T.getState().vs; r.uphill20 = { from: C.MAX_SPEED, after2s: +vu.toFixed(2), lossPct: +(100 * (C.MAX_SPEED - vu) / C.MAX_SPEED).toFixed(1) };
     T.loadCustomLevel(slopeLvl(0.25, 120)); T.placeBall(20.5, 0, 3, 0); T.setDrag(0, 1); let minVs = 99; run(60 * 6, 1/60, () => { minVs = Math.min(minVs, T.getState().vs); }); r.uphillHold = { minVs: +minVs.toFixed(3) };
     // camera pitch follows slope: time for camera pitch to make 63% of its change after the ball enters a 20% downhill
     T.loadCustomLevel(slopeLvl(-0.2, 80)); T.placeBall(8, 0, 10, 0); T.setDrag(0, 0.6); let p0 = null, tEnter = null, tt2 = 0; const pitches = [];
@@ -241,12 +241,12 @@ if (want('physics')) {
     r.hammer = { period: cross.length > 1 ? +((cross[cross.length - 1] - cross[0]) / (cross.length - 1)).toFixed(3) : null, minR: +Math.min(...hr.map(x => x[1])).toFixed(2), maxR: +Math.max(...hr.map(x => x[1])).toFixed(2), half };
     const hits = [];
     for (let k = 0; k < 8; k++) { T.loadCustomLevel(hamLvl('both')); T.placeBall(40 - 9 - k * 0.37, 0, 9, 0); let prev = T.getState(); let hit = null; let frozen = false;
-      for (let i = 0; i < 120; i++) { T.setDrag(0, 0.6); T.tick(1/120 * 2); const s = T.getState(); if (s.status === 'playing' && Math.abs(s.vr - prev.vr) > 2.5 && !hit) hit = { dvr: +(s.vr - prev.vr).toFixed(2), vr: +s.vr.toFixed(2), vyUp: +Math.max(0, s.ball.vy - prev.ball.vy).toFixed(2), vsAfter: +s.vs.toFixed(2) }; if (hit && s.vs < 0.5 && s.status === 'playing') frozen = true; prev = s; if (s.s > 46) break; }
+      for (let i = 0; i < 120; i++) { T.setDrag(0, T.getState().vs < 9 ? 1 : 0); T.tick(1/120 * 2); const s = T.getState(); if (s.status === 'playing' && Math.abs(s.vr - prev.vr) > 2.5 && !hit) hit = { dvr: +(s.vr - prev.vr).toFixed(2), vr: +s.vr.toFixed(2), vyUp: +Math.max(0, s.ball.vy - prev.ball.vy).toFixed(2), vsAfter: +s.vs.toFixed(2) }; if (hit && s.vs < 0.5 && s.status === 'playing') frozen = true; prev = s; if (s.s > 46) break; }
       if (hit) hits.push(Object.assign(hit, { frozen })); }
     r.hammerHits = hits;
     // knocked off an unguarded deck
     let offs = 0, tries = 0; for (let k = 0; k < 8; k++) { T.loadCustomLevel(hamLvl('none')); T.placeBall(40 - 9 - k * 0.37, 0, 9, 0); let hitSeen = false, prevVr = 0; tries++;
-      for (let i = 0; i < 240; i++) { T.setDrag(0, 0.6); T.tick(1/60); const s = T.getState(); if (Math.abs(s.vr - prevVr) > 2.5) hitSeen = true; prevVr = s.vr; if (s.fallenCount > 0) { if (hitSeen) offs++; break; } } if (!hitSeen) tries--; }
+      for (let i = 0; i < 240; i++) { T.setDrag(0, T.getState().vs < 9 ? 1 : 0); T.tick(1/60); const s = T.getState(); if (Math.abs(s.vr - prevVr) > 2.5) hitSeen = true; prevVr = s.vr; if (s.fallenCount > 0) { if (hitSeen) offs++; break; } } if (!hitSeen) tries--; }
     r.hammerKnockOff = { hits: tries, fellAfterHit: offs };
     // G4 rolling balls
     const rbLvl = (mode) => ({ name: 'rb', pieces: [{ len: 140, guard: 'both' }], obstacles: [mode === 'down' ? { type: 'rollball', mode: 'down', s0: 30, s1: 90, r: 0, diameter: 2, speed: 6 } : { type: 'rollball', mode: 'across', s0: 50, r: 0, diameter: 2, speed: 6 }], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] });
@@ -291,7 +291,7 @@ if (want('physics')) {
     const W = 1180, H = 820; const Rj = Math.max(70, Math.min(140, 0.16 * Math.min(W, H))); const dz = n => Math.abs(n) <= 0.08 ? 0 : Math.sign(n) * (Math.abs(n) - 0.08) / 0.92;
     const railLvl = { name: 'rails', pieces: [{ len: 30 }, { kind: 'rails', len: 80, width: 0.5, rails: [0], guard: 'none' }, { len: 30 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] };
     const railTry = (frac, hold) => { T.loadCustomLevel(railLvl); T.placeBall(34, 0, 12, 0); const nx = dz(Math.min(1, frac * W / Rj)); let tt = 0, fell = false;
-      for (let i = 0; i < 240; i++) { const s0 = T.getState(); T.setDrag(tt < hold ? nx : 0, s0.vs < 12 ? 1 : 0); T.tick(1/120); tt += 1/120; if (T.getState().fallenCount > 0) { fell = true; break; } }
+      for (let i = 0; i < 240; i++) { const s0 = T.getState(); T.setDrag(tt < hold ? nx : 0, 0); T.setVelocity(12, s0.vr, s0.vy); T.tick(1/120); tt += 1/120; if (T.getState().fallenCount > 0) { fell = true; break; } }
       return { frac, nx: +nx.toFixed(3), hold, fell }; };
     T.loadCustomLevel(railLvl); const railW = T.getPieces()[1].width;
     r.rails = { width: railW, small: railTry(0.03, 0.15), big: railTry(0.15, 0.25), sweep: [0.02, 0.04, 0.06, 0.08, 0.10, 0.12, 0.15].map(f => railTry(f, 0.2)) };
@@ -321,28 +321,28 @@ if (want('physics')) {
   });
   fs.writeFileSync(path.join(__dirname, 'metrics-slice3.json'), JSON.stringify(m, null, 2));
   const C = m.cfg;
-  check('speed', 'top speed 11-13.5 m/s and 0-90% in 0.7-1.6 s', C.MAX_SPEED >= 11 && C.MAX_SPEED <= 13.5 && m.accel.t90 >= 0.7 && m.accel.t90 <= 1.6, m.accel);
+  check('speed', `top speed ~16 m/s (Eric, Nov 9; was 12) reached, 0-90% in 0.7-1.6 s`, C.MAX_SPEED >= 15 && C.MAX_SPEED <= 17 && Math.abs(m.accel.vAt4s - C.MAX_SPEED) < 0.5 && m.accel.t90 >= 0.7 && m.accel.t90 <= 1.6, Object.assign({ MAX_SPEED: C.MAX_SPEED }, m.accel));
   check('speed', 'coast keeps 25-80% after 2 s', m.coast.vAfter2s > 0.25 * m.coast.v0 && m.coast.vAfter2s < 0.8 * m.coast.v0, m.coast);
   check('speed', 'brake stops < 1.2 s, never reverses', m.brake.stopSec && m.brake.stopSec < 1.2 && m.brake.minVs >= -0.01, m.brake);
   check('steer', 'lateral 90% in < 0.35 s; release drift < 0.6 m', m.lateral.t90 !== null && m.lateral.t90 < 0.35 && m.lateral.releaseDrift < 0.6, m.lateral);
-  check('rails', 'guard rail holds at 16 m/s full steer and bounces', !m.rail.fell && m.rail.maxAbsR <= m.rail.half && m.rail.bounced, m.rail);
+  check('rails', 'guard rail holds at pad speed with full steer and bounces', !m.rail.fell && m.rail.maxAbsR <= m.rail.half && m.rail.bounced, m.rail);
   // G1
   const cv = m.curve; const banked = cv.slice(0, 4);
   const g1a = check('G1', 'curves 45-90 deg R8-15 bank20-35: no-steer ball rides 0.5-1.5 m outward at 10-12 m/s', banked.every(c => !c.left && c.maxOutward >= 0.5 && c.maxOutward <= 1.5), banked);
-  const g1b = check('G1', 'curve at 16 m/s with no steering: stays on the track', !cv[4].left, cv[4]);
+  const g1b = check('G1', 'curve at top speed with no steering: stays on the track', !cv[4].left, cv[4]);
   const g1c = check('G1', 'camera re-centres behind the ball within 0.5 s after a turn', cv.every(c => c.recenterSec !== null && c.recenterSec <= 0.5), cv.map(c => c.recenterSec));
-  gapRow('1 Curves + banking', 'no-steer ride-up 0.5-1.5 m at >=10 m/s, never leaves', banked.map(c => `${c.deg}°/R${c.R}/${c.bank}°@${c.v}: ${c.maxOutward} m`).join('; ') + `; 16 m/s: ${cv[4].left ? 'LEFT TRACK' : 'stays on (' + cv[4].maxOutward + ' m)'}`, g1a && g1b);
+  gapRow('1 Curves + banking', 'no-steer ride-up 0.5-1.5 m at >=10 m/s, never leaves', banked.map(c => `${c.deg}°/R${c.R}/${c.bank}°@${c.v}: ${c.maxOutward} m`).join('; ') + `; ${cv[4].v} m/s: ${cv[4].left ? 'LEFT TRACK' : 'stays on (' + cv[4].maxOutward + ' m)'}`, g1a && g1b);
   gapRow('1 Curves + banking', 'camera re-centres <= 0.5 s', cv.map(c => c.recenterSec + ' s').join(', '), g1c);
   const lvTurns = m.levels.flatMap(l => l.turns); const okTurns = lvTurns.filter(([d, R, b]) => Math.abs(d) >= 45 && Math.abs(d) <= 90 && R >= 8 && R <= 15 && b >= 20 && b <= 35);
   check('G1', 'levels use 45-90 deg / R 8-15 / bank 20-35 turns', okTurns.length >= 10, { total: lvTurns.length, inSpec: okTurns.length });
   // G2
   const g2a = check('G2', 'downhill 15%, no input, from 8 m/s: +2..+4 m/s in 3 s', m.downhill15.gain >= 2 && m.downhill15.gain <= 4, m.downhill15);
-  const g2b = check('G2', 'downhill 25% capped at 15 m/s (reaches >= 14.5)', m.downhill25.vmax <= 15.05 && m.downhill25.vmax >= 14.5, m.downhill25);
-  const g2c = check('G2', 'uphill 20% holding forward from 12 m/s: loses 30-60% in 2 s', m.uphill20.lossPct >= 30 && m.uphill20.lossPct <= 60, m.uphill20);
+  const g2b = check('G2', 'downhill 25% capped at DOWNHILL_CAP (top speed + 3; spec said 15 before the 16 m/s change)', m.downhill25.vmax <= C.DOWNHILL_CAP + 0.05 && m.downhill25.vmax >= C.DOWNHILL_CAP - 0.5, m.downhill25);
+  const g2c = check('G2', 'uphill 20% holding forward from top speed: loses 30-60% in 2 s', m.uphill20.lossPct >= 30 && m.uphill20.lossPct <= 60, m.uphill20);
   const g2d = check('G2', 'never rolls backward while holding forward on 25%', m.uphillHold.minVs >= -0.01, m.uphillHold);
   const g2e = check('G2', 'camera pitches with the slope within 0.3 s (63%)', m.camPitch.t63 !== null && m.camPitch.t63 <= 0.3 && Math.abs(m.camPitch.pEnd - m.camPitch.p0) > 0.05, m.camPitch);
   gapRow('2 Slopes', 'downhill +2..4 m/s / 3 s', `+${m.downhill15.gain} m/s (15%, from 8)`, g2a);
-  gapRow('2 Slopes', 'cap 15 m/s', `max ${m.downhill25.vmax} m/s on 25%`, g2b);
+  gapRow('2 Slopes', `cap (15 m/s in spec; now ${C.DOWNHILL_CAP} with 16 m/s top speed)`, `max ${m.downhill25.vmax} m/s on 25%`, g2b);
   gapRow('2 Slopes', 'uphill 20% loses 30-60%', `${m.uphill20.lossPct}% in 2 s`, g2c);
   gapRow('2 Slopes', 'camera pitch <= 0.3 s', `${m.camPitch.t63} s to 63%`, g2e);
   // G3
