@@ -1084,7 +1084,9 @@
     el.addEventListener('pointermove', e => {
       if (e.pointerId !== pointer) return;
       e.preventDefault();
-      const radius = clamp(0.16 * Math.min(width, height), 70, 140);
+      // Joystick radius is a fixed share of the shorter screen side (no px floor/cap), so the
+      // same drag (as a share of the screen) gives the same steer at every viewport (844x390 included).
+      const radius = 0.16 * Math.max(1, Math.min(width, height));
       let dx = e.clientX - origin.x, dy = e.clientY - origin.y;
       const length = Math.hypot(dx, dy);
       if (length > radius) {

@@ -181,7 +181,31 @@ async function mapping(kind) {
   check('input', `${kind}: no errors`, o.errors.length === 0, o.errors.slice(0, 2));
   await o.ctx.close();
 }
-if (want('input')) { await mapping('mouse'); await mapping('touch'); }
+// Steering parity: the same drag (5% of the shorter side, touch) must move the ball the same share
+// of the screen at all 4 sizes (+-20%). Vertical FOV is fixed, so on-screen share is measured vs height.
+async function steerParity() {
+  const out = [];
+  for (const [w, h] of SIZES) {
+    const o = await open(w, h, { touch: true, render: true }); const { page } = o;
+    const cdp = await page.context().newCDPSession(page);
+    const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
+    const touch = async (type, x, y) => { await cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 0 }] }); await settle(); };
+    const st = () => page.evaluate(() => { const T = window.__test; const s = T.getState(); const b = T.projectBall(); const c0 = T.worldAt(s.s, 0, 0); const c = T.projectPoint(c0.x, c0.y, c0.z); return { r: s.r, rel: b.sx - c.sx, nx: T.getDrag().nx }; });
+    await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.placeBall(12, 0, 10, 0); T.clearDrag(); for (let i = 0; i < 30; i++) T.tick(1/60); });
+    const m = Math.min(w, h), cx = Math.round(w / 2), cy = Math.round(h * 0.7);
+    await touch('touchStart', cx, cy); const a = await st();
+    await touch('touchMove', cx + Math.round(0.05 * m), cy);
+    await page.evaluate(() => { for (let i = 0; i < 20; i++) window.__test.tick(1/60); });
+    const b = await st(); await touch('touchEnd');
+    out.push({ size: `${w}x${h}`, dragPx: Math.round(0.05 * m), nx: +b.nx.toFixed(3), dr: +(b.r - a.r).toFixed(3), movePx: +(b.rel - a.rel).toFixed(1), shareOfH: +((b.rel - a.rel) / h).toFixed(4), errors: o.errors.length });
+    await o.ctx.close();
+  }
+  const sh = out.map(x => x.shareOfH), mean = sh.reduce((p, q) => p + q, 0) / sh.length;
+  const ok = sh.every(v => v > 0 && Math.abs(v / mean - 1) <= 0.2) && out.every(x => x.errors === 0);
+  check('input', 'same drag (5% of short side) moves the ball the same share of the screen at all 4 sizes (+-20%)', ok, { meanShareOfH: +mean.toFixed(4), out });
+  gapRow('input', 'steering independent of viewport (+-20%)', out.map(x => `${x.size} ${x.movePx}px=${(x.shareOfH * 100).toFixed(1)}%H`).join(', '), ok);
+}
+if (want('input')) { await mapping('mouse'); await mapping('touch'); await steerParity(); }
 
 // ---------- 4. Base feel (slice-2 numbers must hold) + every gap item measured on custom test levels
 if (want('physics')) {
