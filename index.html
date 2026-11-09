@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#3A1D7A">
     <title>Rolling Balls</title>
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23F4F2FF'/%3E%3Cpath d='M4 16h24' stroke='%23FF6F7D' stroke-width='5'/%3E%3C/svg%3E">
     <style>
@@ -12,22 +13,29 @@
             box-sizing: border-box;
             font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
-        
-        body {
+
+        html, body {
             overflow: hidden;
-            background: #000;
-            height: 100dvh;
-            width: 100vw;
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+            background: #3A1D7A;
+            height: 100%;
+            width: 100%;
+            touch-action: none;
         }
-        
+
+        body {
+            height: 100dvh;
+            -webkit-user-select: none;
+            user-select: none;
+            overscroll-behavior: none;
+        }
+
         #game {
             position: relative;
             width: 100%;
             height: 100%;
             touch-action: none;
         }
-        
+
         canvas {
             display: block;
             position: absolute;
@@ -36,26 +44,26 @@
             width: 100%;
             height: 100%;
         }
-        
+
         #ui {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
-            padding: 20px;
+            padding: max(20px, env(safe-area-inset-top)) 20px 20px;
             pointer-events: none;
             z-index: 10;
         }
-        
+
         #level-title {
             color: white;
             font-size: 18px;
             font-weight: 800;
             text-align: center;
-            margin-bottom: 10px;
+            margin: 0 70px 10px;
             text-shadow: 0 0 4px rgba(0,0,0,0.7);
         }
-        
+
         #progress-container {
             width: 60%;
             height: 10px;
@@ -64,18 +72,17 @@
             margin: 0 auto;
             overflow: hidden;
         }
-        
+
         #progress-bar {
             height: 100%;
             background: #3EE6B0;
             width: 0%;
-            transition: width 0.3s;
         }
-        
+
         #coin-counter {
             position: absolute;
-            top: 20px;
-            right: 20px;
+            top: max(20px, env(safe-area-inset-top));
+            right: max(20px, env(safe-area-inset-right));
             color: white;
             font-size: 18px;
             font-weight: bold;
@@ -83,7 +90,7 @@
             padding: 5px 10px;
             border-radius: 10px;
         }
-        
+
         #pause-button {
             position: absolute;
             top: max(12px, env(safe-area-inset-top));
@@ -102,13 +109,21 @@
             cursor: pointer;
             pointer-events: auto;
             padding: 0;
+            touch-action: manipulation;
             -webkit-tap-highlight-color: transparent;
         }
-        #pause-button svg { width: 18px; height: 18px; display: block; pointer-events: none; }
+
+        #pause-button svg {
+            width: 18px;
+            height: 18px;
+            display: block;
+            pointer-events: none;
+        }
+
         #pause-button .play-tri { display: none; }
         #pause-button.paused .pause-bars { display: none; }
         #pause-button.paused .play-tri { display: block; }
-        
+
         #level-complete {
             position: absolute;
             top: 50%;
@@ -124,19 +139,19 @@
             z-index: 20;
             pointer-events: auto;
         }
-        
+
         #level-complete h2 {
             color: #FFD23F;
             margin-bottom: 20px;
             font-size: 24px;
         }
-        
+
         #coins-collected {
             color: white;
             font-size: 20px;
             margin: 20px 0;
         }
-        
+
         #continue-button {
             background: #3EE6B0;
             color: #1B1F55;
@@ -146,34 +161,54 @@
             font-size: 18px;
             font-weight: bold;
             width: 220px;
+            max-width: 100%;
             height: 64px;
             cursor: pointer;
             margin-top: 20px;
+            touch-action: manipulation;
+            -webkit-tap-highlight-color: transparent;
         }
-        
+
         .speed-streak {
             position: absolute;
             pointer-events: none;
             z-index: 5;
+            opacity: 0;
+            transition: opacity 0.2s;
         }
-        
-        .speed-streak { opacity: 0; transition: opacity 0.2s; }
+
         .left-streak {
-            left: 0; top: 0; height: 100%; width: 8%;
+            left: 0;
+            top: 0;
+            height: 100%;
+            width: 8%;
             background: linear-gradient(to right, rgba(255,255,255,0.08), transparent);
         }
+
         .right-streak {
-            right: 0; top: 0; height: 100%; width: 8%;
+            right: 0;
+            top: 0;
+            height: 100%;
+            width: 8%;
             background: linear-gradient(to left, rgba(255,255,255,0.08), transparent);
         }
-        body { -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+
+        @media (max-width: 480px) {
+            #level-title {
+                font-size: 15px;
+                margin-left: 45px;
+                margin-right: 80px;
+                min-height: 36px;
+            }
+            #coin-counter { font-size: 15px; }
+        }
     </style>
 </head>
 <body>
     <div id="game">
         <div id="ui">
-            <div id="level-title">Level 1</div>
-            <div id="progress-container">
+            <div id="level-title">Level 1 · First Roll</div>
+            <div id="progress-container" role="progressbar" aria-label="Level progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
                 <div id="progress-bar"></div>
             </div>
             <div id="coin-counter">Coins: 0</div>
@@ -182,15 +217,15 @@
                 <svg class="play-tri" viewBox="0 0 18 18" aria-hidden="true"><path d="M5 2.5v13l11-6.5L5 2.5z" fill="#FFFFFF"/></svg>
             </button>
         </div>
-        <div id="level-complete">
-            <h2>Level Complete!</h2>
+        <div id="level-complete" role="dialog" aria-modal="true" aria-labelledby="complete-title">
+            <h2 id="complete-title">Level Complete!</h2>
             <div id="coins-collected">Coins: 0</div>
-            <button id="continue-button">Continue</button>
+            <button id="continue-button" type="button">Continue</button>
         </div>
         <div class="speed-streak left-streak"></div>
         <div class="speed-streak right-streak"></div>
     </div>
-    
+
     <script src="./vendor/three.min.js"></script>
     <script src="./game.js"></script>
 </body>

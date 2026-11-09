@@ -1,0 +1,49 @@
+{
+  "spinForward": {
+    "n": 118,
+    "good": 0,
+    "bad": 118,
+    "worstDot": -1,
+    "samples": [
+      {
+        "dx": 0,
+        "dz": 0.023,
+        "dot": -1,
+        "ratio": 1
+      },
+      {
+        "dx": 0,
+        "dz": 0.031,
+        "dot": -1,
+        "ratio": 1
+      },
+      {
+        "dx": 0,
+        "dz": 0.039,
+        "dot": -1,
+        "ratio": 1
+      },
+      {
+        "dx": 0,
+        "dz": 0.047,
+        "dot": -1,
+        "ratio": 1
+      },
+      {
+        "dx": 0,
+        "dz": 0.054,
+        "dot": -1,
+        "ratio": 1
+      }
+    ],
+    "meanRatio": 0.988
+  },
+  "steerRight": {
+    "screenDx": -32,
+    "note": "drag nx=+1 (finger right); positive = ball moved right on screen"
+  },
+  "pullBack": {
+    "vzAfter1s": -9.92
+  },
+  "l1FullThrottleSec": 3.88
+}

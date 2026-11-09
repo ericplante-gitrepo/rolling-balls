@@ -1,0 +1,97 @@
+{
+  "cfg": {
+    "MAX_SPEED": 12,
+    "ACCEL": 12,
+    "BRAKE": 16,
+    "LAT_MAX": 6.5,
+    "RESPAWN_S": 2
+  },
+  "accel": {
+    "t90": 1.37,
+    "vAt4s": 11.99,
+    "curve": [
+      0,
+      1.29,
+      4.18,
+      6.97,
+      9.66,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99,
+      11.99
+    ]
+  },
+  "coast": {
+    "v0": 11.99,
+    "vAfter2s": 3.99
+  },
+  "brake": {
+    "stopSec": 0.63,
+    "minVz": 0
+  },
+  "lateral": {
+    "t90": 0.2,
+    "releaseDrift": 0.013,
+    "vxAfter": 0
+  },
+  "rail": {
+    "maxAbsX": 1.55,
+    "fell": false,
+    "bounced": true
+  },
+  "gapFast": {
+    "maxVyAir": 3.58,
+    "airSec": 0.48,
+    "maxY": 1.66,
+    "fallen": false,
+    "done": true
+  },
+  "gapSlow": {
+    "maxVyAir": 1.2,
+    "airSec": 0.57,
+    "maxY": 1.39,
+    "fallen": true,
+    "done": false
+  },
+  "respawnStart": {
+    "cpIndex": -1,
+    "respawnSec": 2,
+    "respawnZ": 0,
+    "cpZ": 0,
+    "camDropDuringFall": 0.94,
+    "speedAfter": 0
+  },
+  "respawnCP": {
+    "cpIndex": 0,
+    "respawnSec": 2,
+    "respawnZ": 30,
+    "cpZ": 30.19,
+    "camDropDuringFall": 0.94,
+    "speedAfter": 0
+  },
+  "timestep": {
+    "hz30": [
+      36.983,
+      0.08
+    ],
+    "hz60": [
+      36.983,
+      0.08
+    ],
+    "hz120": [
+      36.983,
+      0.08
+    ]
+  },
+  "camera": {
+    "maxFrameDeltaVel": 0.0142,
+    "maxStepPerFrame": 0.252
+  }
+}
