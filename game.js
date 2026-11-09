@@ -21,6 +21,12 @@
   const FALL_Y = -10;
   const INPUT_GRACE = 0.4;
   const CAMERA_TAU = 0.15;
+  // LOOK_SPEC v1.1 camera (matches the reference video)
+  const CAM_BEHIND = 8.5;
+  const CAM_ABOVE = 4.0;
+  const CAM_FOV = 60;
+  const LOOK_AHEAD = 10;
+  const COIN_MAX = 0.6;
   const FOV_TAU = 0.25;
   const EPS = 1e-8;
 
@@ -73,6 +79,7 @@
   const spinAxis = new THREE.Vector3();
   const spinQ = new THREE.Quaternion();
   const temp = new THREE.Vector3();
+  const aim = new THREE.Vector3();
   const titles = ['First Roll', 'Smash!', 'Slide Gate', 'Thin Rails', 'Grand Tour'];
 
   const test = {
@@ -159,11 +166,25 @@
       ROLL_DRAG, COAST_DRAG, DOWNHILL_CAP, PAD_SPEED, PAD_DURATION,
       LAT_MAX, LAT_RESPONSE, AIR_RESPONSE, RESPAWN_S, FIXED_DT,
       FALL_Y, INPUT_GRACE, CAMERA_TAU, FOV_TAU,
-      CAMERA_BEHIND: 3.2, CAMERA_ABOVE: 1.6, LOOK_AHEAD: 6,
-      FOV: 62, FAST_FOV: 68, GUARD_HEIGHT: 0.35,
+      CAMERA_BEHIND: CAM_BEHIND, CAMERA_ABOVE: CAM_ABOVE, LOOK_AHEAD,
+      FOV: CAM_FOV, GUARD_HEIGHT: 0.35,
       RAIL_RESTITUTION: 0.35, WALL_RESTITUTION: 0.3
     }),
-    getPlanetScreen
+    getPlanetScreen,
+    getCoinSizes: () => coins.map(c => {
+      const v = new THREE.Box3().setFromObject(c.mesh).getSize(new THREE.Vector3());
+      return Math.max(v.x, v.y, v.z);
+    }),
+    ballScreen() {
+      // on-screen centre and height of the ball (CSS px), from its projected top and bottom
+      camera.updateMatrixWorld(true);
+      const r = renderer.domElement.getBoundingClientRect();
+      const toScreen = v => { temp.copy(v).project(camera); return { x: (temp.x + 1) * r.width / 2, y: (1 - temp.y) * r.height / 2 }; };
+      const c = ballMesh.position;
+      const up = new THREE.Vector3().setFromMatrixColumn(camera.matrixWorld, 1).multiplyScalar(BALL_R);
+      const top = toScreen(c.clone().add(up)), bot = toScreen(c.clone().sub(up)), mid = toScreen(c);
+      return { cx: mid.x / r.width, cy: mid.y / r.height, heightFrac: Math.abs(bot.y - top.y) / r.height, w: r.width, h: r.height };
+    }
   };
   window.__test = test;
 
@@ -183,7 +204,7 @@
   function init() {
     scene = new THREE.Scene();
     scene.fog = new THREE.Fog(0x2A145C, 40, 110);
-    camera = new THREE.PerspectiveCamera(62, 1, 0.1, 420);
+    camera = new THREE.PerspectiveCamera(CAM_FOV, 1, 0.1, 420);
     scene.add(camera);
     lookTarget = new THREE.Vector3();
     frozenCamera = new THREE.Vector3();
@@ -219,9 +240,10 @@
     const ctx = canvas.getContext('2d');
     const g = ctx.createLinearGradient(0, 0, 0, 1024);
     g.addColorStop(0, '#3A1D7A');
-    g.addColorStop(0.25, '#3A1D7A');
-    g.addColorStop(0.48, '#FF6F7D');
-    g.addColorStop(0.62, '#FFB36B');
+    // Horizon band follows the v1.1 camera (horizon ~31% down the screen).
+    g.addColorStop(0.2, '#3A1D7A');
+    g.addColorStop(0.28, '#FF6F7D');
+    g.addColorStop(0.33, '#FFB36B');
     g.addColorStop(1, '#2A145C');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, 8, 1024);
@@ -255,24 +277,36 @@
   }
 
   function addRidge(z, color, phase) {
-    const points = [];
+    // LOOK_SPEC v1.1: no hard bottom edge. Each ridge is a strip of columns; the bottom 30%
+    // of every column fades from horizon haze #FF6F7D at 0% opacity up to the ridge colour.
+    const base = -10;
+    const ridge = new THREE.Color(color), haze = new THREE.Color(0xFF6F7D);
+    const pos = [], col = [];
     const count = 24;
+    const peak = i => 1 + 5 * Math.sin(i * 1.7 + phase) + 2 * Math.cos(i * 0.8);
+    const vert = (x, y, c, a) => { pos.push(x, y, z); col.push(c.r, c.g, c.b, a); };
     for (let i = 0; i < count; i++) {
-      const x0 = -300 + i * 25;
-      const x1 = x0 + 25;
-      const y0 = -1 + 5 * Math.sin(i * 1.7 + phase) + 2 * Math.cos(i * 0.8);
-      const y1 = -1 + 5 * Math.sin((i + 1) * 1.7 + phase) +
-        2 * Math.cos((i + 1) * 0.8);
-      points.push(x0, -22, z, x1, -22, z, x1, y1, z);
-      points.push(x0, -22, z, x1, y1, z, x0, y0, z);
+      const x0 = -300 + i * 25, x1 = x0 + 25;
+      const t0 = peak(i), t1 = peak(i + 1);
+      const m0 = base + 0.3 * (t0 - base), m1 = base + 0.3 * (t1 - base);
+      // fade band (haze, alpha 0) -> (ridge, alpha 1)
+      vert(x0, base, haze, 0); vert(x1, base, haze, 0); vert(x1, m1, ridge, 1);
+      vert(x0, base, haze, 0); vert(x1, m1, ridge, 1); vert(x0, m0, ridge, 1);
+      // solid upper 70%
+      vert(x0, m0, ridge, 1); vert(x1, m1, ridge, 1); vert(x1, t1, ridge, 1);
+      vert(x0, m0, ridge, 1); vert(x1, t1, ridge, 1); vert(x0, t0, ridge, 1);
     }
     const geo = new THREE.BufferGeometry();
-    geo.setAttribute('position', new THREE.Float32BufferAttribute(points, 3));
-    geo.computeVertexNormals();
-    hills.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-      color, side: THREE.DoubleSide, fog: false
-    })));
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.setAttribute('color', new THREE.Float32BufferAttribute(col, 4));
+    const mesh = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      vertexColors: true, transparent: true, depthWrite: false,
+      side: THREE.DoubleSide, fog: false
+    }));
+    mesh.renderOrder = -z; // far ridge first
+    hills.add(mesh);
   }
+
 
   function buildBall() {
     const canvas = document.createElement('canvas');
@@ -719,7 +753,7 @@
     const face = new THREE.Mesh(
       new THREE.CylinderGeometry(0.265, 0.265, 0.075, 24),
       material(0xFFD23F, {
-        emissive: 0xFFD23F, emissiveIntensity: 0.2,
+        emissive: 0xFFD23F, emissiveIntensity: 0.5,
         metalness: 0.25, roughness: 0.35
       })
     );
@@ -729,6 +763,10 @@
       new THREE.TorusGeometry(0.277, 0.023, 8, 32),
       material(0xE0A800, { metalness: 0.3, roughness: 0.3 })
     ));
+    // Hard 0.6 m size cap on every coin (face + rim), whatever its geometry.
+    const size = new THREE.Box3().setFromObject(group).getSize(new THREE.Vector3());
+    const biggest = Math.max(size.x, size.y);
+    if (biggest > COIN_MAX) group.scale.setScalar(COIN_MAX / biggest);
     group.position.set(x, sampleTrack(z, x).y + 0.7, z);
     levelRoot.add(group);
     coins.push({ mesh: group, collected: false });
@@ -1321,21 +1359,30 @@
 
   function cameraAim() {
     const b = state.ball;
-    const ahead = sampleTrack(b.z + 6, b.x);
+    const ahead = sampleTrack(b.z + LOOK_AHEAD, b.x);
     const supportY = ahead.y + BALL_R;
     const framingY = state.grounded ? b.y : Math.max(b.y, takeoffY);
-    return new THREE.Vector3(
-      b.x,
-      framingY * 0.55 + supportY * 0.45 + 0.4,
-      b.z + 6
-    );
+    // Look 10 m ahead at ball height on the flat (puts the ball ~70% down the screen);
+    // blends toward the track ahead so it still pitches with climbs and drops.
+    return aim.set(b.x, framingY * 0.7 + supportY * 0.3, b.z + LOOK_AHEAD + leadZ());
+  }
+
+  // The 0.15 s follow trails a moving target by v*tau; lead the target by the same
+  // amount so the camera sits 8.5 m behind at speed instead of ~10 m.
+  // The lead itself is eased (0.3 s) so a speed-pad kick doesn't jolt the camera.
+  let camLead = 0;
+  function leadZ() { return camLead; }
+  function updateLead(dt) {
+    const want = state.status === 'playing' ? Math.max(0, state.ball.vz) * CAMERA_TAU : 0;
+    camLead += (want - camLead) * smooth(dt, 0.3);
   }
 
   function snapCamera() {
     const b = state.ball;
-    camera.position.set(b.x, b.y + 1.6, b.z - 3.2);
+    camLead = Math.max(0, b.vz) * CAMERA_TAU;
+    camera.position.set(b.x, b.y + CAM_ABOVE, b.z - CAM_BEHIND);
     lookTarget.copy(cameraAim());
-    camera.fov = 62;
+    camera.fov = CAM_FOV;
     camera.updateProjectionMatrix();
     camera.lookAt(lookTarget);
     camera.updateMatrixWorld(true);
@@ -1352,19 +1399,18 @@
         b.x - camera.position.x, b.z - camera.position.z
       ));
       const minY = camera.position.y -
-        horizontal * Math.tan(THREE.MathUtils.degToRad(35));
+        horizontal * Math.tan(THREE.MathUtils.degToRad(60)); // hold still, look down at the falling ball
       lookTarget.set(b.x, Math.max(b.y, minY), b.z);
     } else {
-      temp.set(b.x, b.y + 1.6, b.z - 3.2);
+      updateLead(dt);
+      temp.set(b.x, b.y + CAM_ABOVE, b.z - CAM_BEHIND + leadZ());
       camera.position.lerp(temp, k);
       lookTarget.lerp(cameraAim(), k);
     }
     camera.lookAt(lookTarget);
     const speed = Math.max(0, b.vz); // forward speed only: steering must not trigger the speed FOV/streaks
-    const fast = clamp((speed / MAX_SPEED - 0.85) / 0.15, 0, 1);
-    const desiredFov = 62 + 6 * fast;
-    camera.fov += (desiredFov - camera.fov) * smooth(dt, FOV_TAU);
-    camera.updateProjectionMatrix();
+    // v1.1: fixed 60° FOV (no speed widening, so the ball keeps its on-screen size)
+    if (camera.fov !== CAM_FOV) { camera.fov = CAM_FOV; camera.updateProjectionMatrix(); }
     camera.updateMatrixWorld(true);
     hills.position.set(camera.position.x, 0, camera.position.z);
     placePlanet();

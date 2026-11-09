@@ -65,7 +65,7 @@
     "respawnSec": 2,
     "respawnZ": 0,
     "cpZ": 0,
-    "camDropDuringFall": 0.94,
+    "camDropDuringFall": 0,
     "speedAfter": 0
   },
   "respawnCP": {
@@ -73,7 +73,7 @@
     "respawnSec": 2,
     "respawnZ": 30,
     "cpZ": 30.19,
-    "camDropDuringFall": 0.94,
+    "camDropDuringFall": 0,
     "speedAfter": 0
   },
   "timestep": {
@@ -92,6 +92,6 @@
   },
   "camera": {
     "maxFrameDeltaVel": 0.0142,
-    "maxStepPerFrame": 0.252
+    "maxStepPerFrame": 0.264
   }
 }

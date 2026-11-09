@@ -82,6 +82,20 @@ for (const [w, h] of SIZES) {
   const pb = await o.page.evaluate(() => window.__test.getPlanetScreen());
   const okPlanet = pb && pb.left >= 0 && pb.top >= 0 && pb.right <= w && pb.bottom <= h && (pb.left + pb.right) / 2 < w / 2 && (pb.top + pb.bottom) / 2 < h / 2;
   check('look', `${w}x${h} planet fully on screen, upper-left`, okPlanet, pb && { l: Math.round(pb.left), t: Math.round(pb.top), r: Math.round(pb.right), b: Math.round(pb.bottom) });
+  // v1.1 camera: ball ~70% down the screen, ~6-8% of screen height (8.5 m/4 m/60 deg works out to ~8.5%)
+  const bs = await o.page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 60; i++) T.tick(1/60);
+    const rest = T.ballScreen(); T.setDrag(0, 1); for (let i = 0; i < 150; i++) T.tick(1/60); const cruise = T.ballScreen(); T.startLevel(1); T.clearDrag(); for (let i = 0; i < 60; i++) T.tick(1/60); return { rest, cruise }; });
+  const r3 = v => +v.toFixed(3);
+  check('camera', `${w}x${h} ball sits ~70% down the screen (rest and at 12 m/s)`, [bs.rest, bs.cruise].every(q => q.cy >= 0.66 && q.cy <= 0.74 && Math.abs(q.cx - 0.5) < 0.02),
+    { restY: r3(bs.rest.cy), cruiseY: r3(bs.cruise.cy), restX: r3(bs.rest.cx) });
+  check('camera', `${w}x${h} ball height 6-9% of screen (spec ~6-8%)`, [bs.rest, bs.cruise].every(q => q.heightFrac >= 0.06 && q.heightFrac <= 0.09),
+    { rest: r3(bs.rest.heightFrac), cruise: r3(bs.cruise.heightFrac) });
+  if (w === 1180) {
+    const cs = await o.page.evaluate(() => { const T = window.__test; let max = 0, n = 0; for (let L = 1; L <= 5; L++) { T.startLevel(L); for (const v of T.getCoinSizes()) { max = Math.max(max, v); n++; } } T.startLevel(1); for (let i = 0; i < 60; i++) T.tick(1/60); return { n, max: +max.toFixed(4) }; });
+    check('look', 'every coin on all 5 levels is <= 0.6 m', cs.n > 50 && cs.max <= 0.6 + 1e-6, cs);
+    const cam = await o.page.evaluate(() => window.__test.getConfig());
+    check('camera', 'camera config = 8.5 m behind, 4 m above, 60 deg, 10 m look-ahead', cam.CAMERA_BEHIND === 8.5 && cam.CAMERA_ABOVE === 4 && cam.FOV === 60 && cam.LOOK_AHEAD === 10, { behind: cam.CAMERA_BEHIND, above: cam.CAMERA_ABOVE, fov: cam.FOV, look: cam.LOOK_AHEAD });
+  }
   const buf = await o.page.screenshot({ path: path.join(SHOTS, `L1-start-${w}x${h}.png`) });
   // sky: sample top 25% band at x=88% of width (away from HUD/planet) via canvas pixels
   const sky = await o.page.evaluate(async ([w, h, b64]) => {
@@ -221,11 +235,11 @@ await mapping('mouse'); await mapping('touch');
     const fallTest = (L, preZ) => { T.startLevel(L); if (preZ) { T.setDrag(0, 1); for (let i = 0; i < 1200 && T.getState().checkpointIndex < 0; i++) T.tick(1/60); }
       const s0 = T.getState(); const cpZ = s0.ball.z; const camY0 = T.getCamera().y; T.clearDrag();
       T.teleport(s0.ball.x + 4.5 * C.SCREEN_RIGHT_X, s0.ball.y + 0.5, s0.ball.z + 3); T.setVelocity(0, 0, 5);
-      let t = 0, tf = null, tr = null, minCamY = 99, steps = 0;
-      for (let i = 0; i < 600; i++) { T.tick(1/60); t += 1/60; const s = T.getState(); if (tf === null && s.status !== 'playing') tf = t;
+      let t = 0, tf = null, tr = null, minCamY = 99, steps = 0, camF = null;
+      for (let i = 0; i < 600; i++) { T.tick(1/60); t += 1/60; const s = T.getState(); if (tf === null && s.status !== 'playing') { tf = t; camF = T.getCamera().y; }
         if (tf !== null && s.status !== 'playing') minCamY = Math.min(minCamY, T.getCamera().y);
         if (tf !== null && s.status === 'playing') { tr = t; break; } }
-      const s = T.getState(); return { cpIndex: s.checkpointIndex, respawnSec: tr && +(tr - tf).toFixed(3), respawnZ: +s.ball.z.toFixed(2), cpZ: +cpZ.toFixed(2), camDropDuringFall: +(camY0 - minCamY).toFixed(2), speedAfter: +s.speed.toFixed(3) }; };
+      const s = T.getState(); return { cpIndex: s.checkpointIndex, respawnSec: tr && +(tr - tf).toFixed(3), respawnZ: +s.ball.z.toFixed(2), cpZ: +cpZ.toFixed(2), camDropDuringFall: +(camF - minCamY).toFixed(3), speedAfter: +s.speed.toFixed(3) }; };
     r.respawnStart = fallTest(1, false); r.respawnCP = fallTest(4, true);
     // frame-rate independence: same input at 30/60/120 Hz for 4 s
     const fr = dt => { T.startLevel(1); T.setDrag(0.2, 1); const n = Math.round(4 / dt), half = Math.round(2 / dt); for (let i = 0; i < n; i++) { if (i === half) T.setDrag(-0.2, 1); T.tick(dt); } const s = T.getState(); return [+s.ball.z.toFixed(3), +s.ball.x.toFixed(3)]; };
@@ -251,7 +265,7 @@ await mapping('mouse'); await mapping('touch');
   check('jump', 'L1 gap needs speed: ~6 m/s run falls', m.gapSlow.fallen, m.gapSlow);
   check('respawn', 'fall before any checkpoint: respawn at start after 2.0 s', m.respawnStart.respawnSec >= 1.95 && m.respawnStart.respawnSec <= 2.06 && m.respawnStart.respawnZ < 2 && m.respawnStart.speedAfter < 0.01, m.respawnStart);
   check('respawn', 'fall after L4 checkpoint: respawn at checkpoint after 2.0 s', m.respawnCP.cpIndex >= 0 && m.respawnCP.respawnSec >= 1.95 && m.respawnCP.respawnSec <= 2.06 && Math.abs(m.respawnCP.respawnZ - m.respawnCP.cpZ) < 3, m.respawnCP);
-  check('camera', 'camera holds at track level during a fall (drops < 1.5 m)', m.respawnStart.camDropDuringFall < 1.5 && m.respawnCP.camDropDuringFall < 1.5, { start: m.respawnStart.camDropDuringFall, cp: m.respawnCP.camDropDuringFall });
+  check('camera', 'camera holds still at track level during a fall (drops < 0.5 m)', m.respawnStart.camDropDuringFall < 0.5 && m.respawnCP.camDropDuringFall < 0.5, { start: m.respawnStart.camDropDuringFall, cp: m.respawnCP.camDropDuringFall });
   check('camera', 'camera follow smooth (frame-to-frame velocity change < 0.05 m, step < 0.4 m)', m.camera.maxFrameDeltaVel < 0.05 && m.camera.maxStepPerFrame < 0.4, m.camera);
   const [a, b, c] = [m.timestep.hz30, m.timestep.hz60, m.timestep.hz120];
   check('timestep', 'same input at 30/60/120 Hz ends within 5 cm', Math.hypot(a[0] - b[0], a[1] - b[1]) < 0.05 && Math.hypot(c[0] - b[0], c[1] - b[1]) < 0.05, m.timestep);
