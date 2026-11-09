@@ -7,15 +7,15 @@
   const C = {
     BALL_R: 0.45, GRAVITY: 22, MAX_SPEED: TOP_SPEED,
     ACCEL: TOP_SPEED, // 0 -> 90% of top speed in ~1.4 s at any top speed
-    BRAKE: TOP_SPEED * 4 / 3, // full pull-back stops from top speed in ~0.65 s
-    ROLL_DRAG: 0.15, COAST_DRAG: 0.55, DOWNHILL_CAP: TOP_SPEED + 3,
-    PAD_SPEED: TOP_SPEED + 4, PAD_DURATION: 1.2, PAD_VY: 10.5,
+    BRAKE: Math.round(TOP_SPEED * 1.3125), /* 9cea556: 21 at 16 m/s */ // full pull-back stops from top speed in ~0.65 s
+    ROLL_DRAG: 0.15, COAST_DRAG: 0.55, DOWNHILL_CAP: TOP_SPEED + 4,
+    PAD_SPEED: TOP_SPEED + 5, PAD_DURATION: 1.2, PAD_VY: 10.5,
     FAST_SPEED: 10, // FOV widening + edge streaks from here (VISUAL_GAPS 12)
-    LAT_MAX: 6.5 * Math.sqrt(TOP_SPEED / 12), /* more sideways authority at higher speed */ LAT_RESPONSE: 12, AIR_RESPONSE: 2.5,
+    LAT_MAX: TOP_SPEED * 8.5 / 16, /* 9cea556: ~0.53x cruise */ LAT_RESPONSE: 14, AIR_RESPONSE: 2.5,
     SLOPE_G: 10, LAT_G: 22, DOWNHILL_DRAG: 0.05, UPHILL_DRIVE_CUT: 0.85, KNOCK_T: 0.6, BANK_DAMP: 4, RESPAWN_S: 2, INPUT_GRACE: 0.4,
     SIDE_T: 0.25, FIXED_DT: 1 / 120, CAMERA_BEHIND: 8.5,
     CAMERA_ABOVE: 2.3, LOOK_AHEAD: 10, LOOK_HEIGHT: 2.1, CAMERA_LATERAL: 0.6, FOV: 60, FAST_FOV: 64,
-    CAMERA_TAU: 0.15, FOV_TAU: 0.25, GUARD_HEIGHT: 0.35,
+    CAMERA_TAU: 0.11, /* 9cea556: cruise lead ~1.8 m at 16 m/s */ FOV_TAU: 0.25, GUARD_HEIGHT: 0.35,
     RAIL_RESTITUTION: 0.35
   };
   const $ = id => document.getElementById(id);

@@ -1,44 +1,44 @@
 {
   "cfg": {
-    "MAX_SPEED": 12,
-    "ACCEL": 12,
-    "BRAKE": 16,
-    "LAT_MAX": 6.5,
+    "MAX_SPEED": 16,
+    "ACCEL": 16,
+    "BRAKE": 21,
+    "LAT_MAX": 8.5,
     "RESPAWN_S": 2
   },
   "accel": {
     "t90": 1.37,
-    "vAt4s": 11.99,
+    "vAt4s": 15.98,
     "curve": [
       0,
-      1.29,
-      4.18,
-      6.97,
-      9.66,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99,
-      11.99
+      1.72,
+      5.58,
+      9.3,
+      12.88,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98,
+      15.98
     ]
   },
   "coast": {
-    "v0": 11.99,
-    "vAfter2s": 3.99
+    "v0": 15.98,
+    "vAfter2s": 5.7
   },
   "brake": {
-    "stopSec": 0.63,
+    "stopSec": 0.65,
     "minVz": 0
   },
   "lateral": {
-    "t90": 0.2,
-    "releaseDrift": 0.013,
+    "t90": 0.167,
+    "releaseDrift": 0.017,
     "vxAfter": 0
   },
   "rail": {
@@ -47,16 +47,16 @@
     "bounced": true
   },
   "gapFast": {
-    "maxVyAir": 3.58,
-    "airSec": 0.48,
-    "maxY": 1.66,
+    "maxVyAir": 4.78,
+    "airSec": 0.57,
+    "maxY": 1.88,
     "fallen": false,
     "done": true
   },
   "gapSlow": {
-    "maxVyAir": 1.2,
-    "airSec": 0.57,
-    "maxY": 1.39,
+    "maxVyAir": 1.78,
+    "airSec": 0.6,
+    "maxY": 1.43,
     "fallen": true,
     "done": false
   },
@@ -72,26 +72,26 @@
     "cpIndex": 0,
     "respawnSec": 2,
     "respawnZ": 30,
-    "cpZ": 30.19,
+    "cpZ": 30.13,
     "camDropDuringFall": 0,
     "speedAfter": 0
   },
   "timestep": {
     "hz30": [
-      36.983,
-      0.08
+      49.301,
+      0.595
     ],
     "hz60": [
-      36.983,
-      0.08
+      49.301,
+      0.595
     ],
     "hz120": [
-      36.983,
-      0.08
+      49.301,
+      0.595
     ]
   },
   "camera": {
-    "maxFrameDeltaVel": 0.0142,
-    "maxStepPerFrame": 0.264
+    "maxFrameDeltaVel": 0.0186,
+    "maxStepPerFrame": 0.347
   }
 }

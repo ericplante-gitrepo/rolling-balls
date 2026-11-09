@@ -76,6 +76,11 @@ for (const [w, h] of SIZES) {
   const o = await open(w, h, { render: true });
   await o.page.evaluate(() => { const T = window.__test; T.startLevel(1); for (let i = 0; i < 60; i++) T.tick(1 / 60); });
   await o.page.waitForTimeout(300);
+  if (w === 1180) {
+    const scripts = await o.page.evaluate(() => [...document.scripts].map(s => s.getAttribute('src') || '').filter(Boolean));
+    const tagged = scripts.filter(s => /(?:game\.js|three\.min\.js)\?v=/.test(s));
+    check('load', 'script tags cache-bust with ?v= build id', tagged.length >= 2, { scripts, tagged });
+  }
   check('load', `${w}x${h} no console errors`, o.errors.length === 0, o.errors.slice(0, 3));
   check('load', `${w}x${h} no external requests`, o.external.length === 0, o.external.slice(0, 3));
   check('load', `${w}x${h} no 4xx/5xx`, o.missing.length === 0, o.missing.slice(0, 3));
@@ -86,7 +91,7 @@ for (const [w, h] of SIZES) {
   const bs = await o.page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 60; i++) T.tick(1/60);
     const rest = T.ballScreen(); T.setDrag(0, 1); for (let i = 0; i < 150; i++) T.tick(1/60); const cruise = T.ballScreen(); T.startLevel(1); T.clearDrag(); for (let i = 0; i < 60; i++) T.tick(1/60); return { rest, cruise }; });
   const r3 = v => +v.toFixed(3);
-  check('camera', `${w}x${h} ball sits ~70% down the screen (rest and at 12 m/s)`, [bs.rest, bs.cruise].every(q => q.cy >= 0.66 && q.cy <= 0.74 && Math.abs(q.cx - 0.5) < 0.02),
+  check('camera', `${w}x${h} ball sits ~70% down the screen (rest and at cruise)`, [bs.rest, bs.cruise].every(q => q.cy >= 0.66 && q.cy <= 0.74 && Math.abs(q.cx - 0.5) < 0.02),
     { restY: r3(bs.rest.cy), cruiseY: r3(bs.cruise.cy), restX: r3(bs.rest.cx) });
   check('camera', `${w}x${h} ball height 6-9% of screen (spec ~6-8%)`, [bs.rest, bs.cruise].every(q => q.heightFrac >= 0.06 && q.heightFrac <= 0.09),
     { rest: r3(bs.rest.heightFrac), cruise: r3(bs.cruise.heightFrac) });
@@ -254,7 +259,7 @@ await mapping('mouse'); await mapping('touch');
     return r;
   });
   const C = m.cfg;
-  check('speed', 'top speed in 10-14 m/s band (video 11-13.5)', C.MAX_SPEED >= 10 && C.MAX_SPEED <= 14 && Math.abs(m.accel.vAt4s - C.MAX_SPEED) < 1, { MAX_SPEED: C.MAX_SPEED, vAt4s: m.accel.vAt4s });
+  check('speed', 'top speed about 16 m/s (15-17 band)', C.MAX_SPEED >= 15 && C.MAX_SPEED <= 17 && Math.abs(m.accel.vAt4s - C.MAX_SPEED) < 1, { MAX_SPEED: C.MAX_SPEED, vAt4s: m.accel.vAt4s });
   check('speed', '0 to 90% top speed in 0.7-1.6 s (video ~1.2 s)', m.accel.t90 >= 0.7 && m.accel.t90 <= 1.6, m.accel);
   check('speed', 'coasting keeps momentum but bleeds speed (2 s: 25-80% kept)', m.coast.vAfter2s > 0.25 * m.coast.v0 && m.coast.vAfter2s < 0.8 * m.coast.v0, m.coast);
   check('speed', 'brake stops in < 1.2 s and never reverses', m.brake.stopSec && m.brake.stopSec < 1.2 && m.brake.minVz >= -0.01, m.brake);
@@ -279,7 +284,7 @@ const perLevel = {};
   const o = await open(); const { page } = o;
   for (let L = 1; L <= 5; L++) {
     const nominal = await page.evaluate(L => window.__bot(L, 1, { noise: 0 }), L);
-    check('levels', `L${L} nominal bot completes with 0 falls in 10-40 s`, nominal.done && nominal.falls === 0 && nominal.t >= 10 && nominal.t <= 40, nominal);
+    check('levels', `L${L} nominal bot completes with 0 falls in 8-40 s`, nominal.done && nominal.falls === 0 && nominal.t >= 8 && nominal.t <= 40, nominal);
     const runs = await page.evaluate(([L, n]) => { const out = []; for (let s = 1; s <= n; s++) out.push(window.__bot(L, 1000 + s * 31, { noise: 0.35 })); return out; }, [L, SEEDS]);
     const done = runs.filter(r => r.done); const t = done.map(r => r.t).sort((a, b) => a - b);
     perLevel[L] = { nominalSec: nominal.t, runs: runs.length, completed: done.length, cleanRuns: done.filter(r => r.falls === 0).length, medianSec: t[Math.floor(t.length / 2)], totalFalls: runs.reduce((a, r) => a + r.falls, 0) };
@@ -308,6 +313,10 @@ for (const [w, h] of SIZES) {
     await page.screenshot({ path: path.join(SHOTS, `${name}-${w}x${h}.png`) });
   }
   if (w === 1180) {
+    await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.setDrag(0, 1); for (let i = 0; i < 240; i++) T.tick(1/60); });
+    await page.screenshot({ path: path.join(SHOTS, `L1-topspeed-${w}x${h}.png`) });
+    await page.evaluate(() => { const T = window.__test; T.startLevel(3); T.setDrag(0, 1); for (let i = 0; i < 300; i++) T.tick(1/60); });
+    await page.screenshot({ path: path.join(SHOTS, `L3-topspeed-${w}x${h}.png`) });
     await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 10; i++) T.tick(1/60); });
     for (let k = 0; k < 4; k++) { // spin filmstrip: forward roll, band should tumble forward
       await page.evaluate(() => { const T = window.__test; T.setDrag(0, 0.35); for (let i = 0; i < 4; i++) T.tick(1/60); });
