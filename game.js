@@ -42,6 +42,7 @@
   let finishS = 150, lowest = 0, accumulator = 0, lastFrame = null;
   let grace = 0, boost = -1, sideTime = 0, sideDir = 0, camYaw = 0, knockUntil = -1;
   let width = 1, height = 1, serial = 0, rng = 12345;
+  let unsupportedSeat = null;
   const look = vec(), frozen = vec(), angular = vec(), axis = vec(), temp = vec();
   const quat = new THREE.Quaternion();
   const up = new THREE.Vector3(0, 1, 0);
@@ -111,8 +112,11 @@
     // so a no-steer ball settles 0.5-1.5 m up the outer side at 10-12 m/s.
     const a = B * 0.55, b = B * 0.45;
     if (Math.abs(b) < 1e-8) return { y: 0, slope: 0, bank: 0 };
-    const phi = clamp(a + b * q, -1.25, 1.25);
-    const y = (Math.log(Math.cos(a)) - Math.log(Math.cos(phi))) / b;
+    const rawPhi = a + b * q;
+    const phi = clamp(rawPhi, -1.25, 1.25);
+    const qClamp = (phi - a) / b;
+    const y = (Math.log(Math.cos(a)) - Math.log(Math.cos(phi))) / b +
+      (q - qClamp) * Math.tan(phi);
     return { y, slope: -sign * Math.tan(phi), bank: p.bank * fade };
   }
   function barMotion(o, time) {
@@ -897,26 +901,25 @@
       ny: state.simTime < grace ? 0 : clamp(drag.ny + has('w', 'arrowup') - has('s', 'arrowdown'), -1, 1)
     };
   }
-  function syncWorld(old, dt) {
+  function syncWorld(old, dt, carryVelocity = 0) {
     const w = worldAt(state.s, state.r, 0);
     state.ball.x = w.x; state.ball.z = w.z;
     state.ball.vy = state.vy;
-    if (old && dt) {
-      state.ball.vx = (w.x - old.x) / dt; state.ball.vz = (w.z - old.z) / dt;
-    } else {
-      const f = frameAt(state.s);
-      state.ball.vx = Math.sin(f.a) * state.vs - Math.cos(f.a) * state.vr;
-      state.ball.vz = Math.cos(f.a) * state.vs + Math.sin(f.a) * state.vr;
-    }
+    const f = frameAt(state.s);
+    const lateral = state.vr + state.vb + carryVelocity;
+    state.ball.vx = Math.sin(f.a) * state.vs - Math.cos(f.a) * lateral;
+    state.ball.vz = Math.cos(f.a) * state.vs + Math.sin(f.a) * lateral;
     state.h = state.ball.y - C.BALL_R - sampleTrack(state.s, state.r).y;
     ball.position.set(state.ball.x, state.ball.y, state.ball.z);
   }
   function placeBall(s, r, vs = 0, vr = 0) {
-    Object.assign(state, { s, r, vs, vr, vb: 0, vy: 0, h: 0, grounded: true, onBar: -1 });
+    unsupportedSeat = null;
+    Object.assign(state, { s, r, vs: Math.max(0, vs), vr, vb: 0, vy: 0, h: 0, grounded: true, onBar: -1 });
     state.ball.y = sampleTrack(s, r).y + C.BALL_R;
     angular.set(0, 0, 0); ball.quaternion.identity(); syncWorld(); snapCamera();
   }
   function resetBall(s, r) {
+    unsupportedSeat = null;
     boost = -1; sideTime = 0; knockUntil = -1;
     obstacles.forEach(o => { o.used = false; o.cooldown = -1; });
     placeBall(s, r); clearInput(); grace = state.simTime + C.INPUT_GRACE;
@@ -925,7 +928,7 @@
     if (state.status !== 'playing') return;
     state.status = 'falling'; state.grounded = false;
     state.fallAt = state.simTime; state.respawnAt = state.fallAt + C.RESPAWN_S;
-    state.fallenCount++; frozen.copy(camera.position);
+    state.fallenCount++; frozen.copy(unsupportedSeat || camera.position);
   }
   function respawn() {
     const cp = checkpoints[state.checkpointIndex];
@@ -981,10 +984,12 @@
     for (const o of obstacles) {
       if (o.dead || o.type === 'bar') continue;
       const ds = state.s - o.s, dr = state.r - o.r;
+      const isPad = ['jump', 'speed', 'side'].includes(o.type);
+      if (isPad && Math.abs(ds) > 2) o.used = false;
       if (Math.abs(ds) > o.d / 2 + C.BALL_R + 0.15) continue;
-      if (['jump', 'speed', 'side'].includes(o.type)) {
+      if (isPad) {
         const inside = Math.abs(ds) < o.d / 2 + 0.06 && Math.abs(dr) < o.w / 2;
-        if (!inside) { if (Math.abs(ds) > 2) o.used = false; continue; }
+        if (!inside) continue;
         if (o.used || !state.grounded) continue;
         o.used = true;
         if (o.type === 'jump') {
@@ -1028,11 +1033,7 @@
         state.vr = direction * clamp(Math.abs(o.vr || o.speed) * 0.9, 4.6, 7.5);
         knockUntil = state.simTime + C.KNOCK_T; // steering can't cancel a knock straight away
         state.vs *= 0.85;
-        if (o.type === 'rollball' && o.mode === 'down') {
-          state.vs = Math.max(-2, Math.min(state.vs, 2));
-          state.s = Math.min(state.s, o.s - o.diameter / 2 - C.BALL_R - 0.01);
-        }
-        state.vy = Math.max(state.vy, 0) + 2;
+        state.vy = clamp(state.vy, -Infinity, 2);
         state.grounded = false;
         state.ball.y += 0.015;
         const extent = o.type === 'rollball'
@@ -1050,16 +1051,21 @@
         } else {
           const sign = Math.sign(ds) || -1;
           state.s = o.s + sign * (o.d / 2 + C.BALL_R + 0.005);
-          if (state.vs * sign < 0) state.vs *= -0.2;
+          if (state.vs * sign < 0) state.vs = 0;
         }
       }
     }
   }
 
   function simulate(dt) {
+    const old = { ...state.ball }, oldS = state.s, oldR = state.r;
+    const attached = state.grounded && state.onBar >= 0
+      ? obstacles.find(o => o.id === state.onBar)
+      : null;
+    const previousBarR = attached ? attached.r : 0;
     state.simTime += dt;
     updateProps(dt);
-    const old = { ...state.ball }, oldS = state.s, oldR = state.r;
+    if (attached) state.r += attached.r - previousBarR;
     if (state.status === 'falling' || state.status === 'respawning') {
       state.vy -= C.GRAVITY * dt;
       state.ball.x += state.ball.vx * dt;
@@ -1087,7 +1093,7 @@
     let grounded = state.grounded && t0.over &&
       Math.abs(state.ball.y - C.BALL_R - t0.y) < 0.065;
     const input = controls();
-    let carry = 0;
+    let carry = attached ? attached.vr : 0;
     if (grounded && t0.onBar >= 0) {
       const bar = obstacles.find(o => o.id === t0.onBar);
       if (bar) carry = bar.vr;
@@ -1119,7 +1125,7 @@
     state.vs *= Math.exp(-dragRate * dt);
     if (grounded) {
       state.vs -= C.SLOPE_G * t0.grade / Math.sqrt(1 + t0.grade * t0.grade) * dt;
-      if (input.ny > 0.2) state.vs = Math.max(0, state.vs);
+      state.vs = Math.max(0, state.vs);
       if (t0.grade < 0 && state.simTime > boost)
         state.vs = Math.min(C.DOWNHILL_CAP, state.vs);
     }
@@ -1129,15 +1135,18 @@
 
     const moveDt = shoving ? Math.min(dt, sideTime) : dt;
     state.s += state.vs * dt;
-    state.r += state.vr * moveDt + (carry + state.vb) * dt;
+    state.r += state.vr * moveDt + state.vb * dt;
     if (shoving) {
       sideTime = Math.max(0, sideTime - dt);
       if (sideTime <= 1e-9) state.vr = 0;
     }
+    // Capture motion before ledge or obstacle depenetration changes s/r.
+    const rolled = worldAt(state.s, state.r);
     const previousBottom = old.y - C.BALL_R;
-    const oldRate = grounded ? surfaceRate(oldS, oldR, state.vs, state.vr + carry) : state.vy;
+    const lateralVelocity = state.vr + state.vb + carry;
+    const oldRate = grounded ? surfaceRate(oldS, oldR, state.vs, lateralVelocity) : state.vy;
     const t1 = sampleTrack(state.s, state.r);
-    const newRate = surfaceRate(state.s, state.r, state.vs, state.vr + carry);
+    const newRate = surfaceRate(state.s, state.r, state.vs, lateralVelocity);
     const continuous = t0.pieceIndex === t1.pieceIndex ||
       Math.abs(t1.piece.y0 - (t0.yc + t0.grade * (state.s - oldS))) < 0.08;
     const convex = grounded && t1.over && continuous && oldRate > newRate + 0.5;
@@ -1162,7 +1171,7 @@
         state.ball.y + C.BALL_R > t1.y - 0.4 && bottom < t1.y) {
         if (t0.pieceIndex !== t1.pieceIndex) {
           state.s = t1.piece.s0 - C.BALL_R - 0.005;
-          state.vs = -0.2 * Math.abs(state.vs);
+          state.vs = 0;
         } else if (!t0.over) {
           state.r = oldR; state.vr *= -0.3;
         }
@@ -1171,7 +1180,6 @@
     state.grounded = grounded;
     state.onBar = grounded ? sampleTrack(state.s, state.r).onBar : -1;
     // Roll only the integrated displacement, never collision push-outs.
-    const rolled = worldAt(state.s, state.r);
     const prior = worldAt(oldS, oldR);
     spin(rolled.x - prior.x, grounded ? state.ball.y - old.y : 0,
       rolled.z - prior.z, grounded, dt);
@@ -1179,8 +1187,17 @@
     collide();
     guards();
     const support = sampleTrack(state.s, state.r);
-    if (!support.over) state.grounded = false;
-    syncWorld(old, dt);
+    if (!support.over) {
+      state.grounded = false;
+    } else if (state.grounded) {
+      state.ball.y = support.y + C.BALL_R;
+      state.vy = surfaceRate(state.s, state.r, state.vs, state.vr + state.vb + carry);
+    }
+    state.onBar = state.grounded ? support.onBar : -1;
+    if (state.grounded) unsupportedSeat = null;
+    else if (!support.over && !unsupportedSeat)
+      unsupportedSeat = camera.position.clone();
+    syncWorld(old, dt, carry);
     if (state.ball.y - C.BALL_R < support.y - 1.5 || state.ball.y < lowest - 12) {
       beginFall(); return;
     }
@@ -1442,7 +1459,7 @@
     loadCustomLevel: def => build(def, 1),
     placeBall(s, r, vs, vr) { placeBall(s, r, vs, vr); grace = 0; knockUntil = -1; sideTime = 0; },
     setVelocity(vs, vr, vy = 0) {
-      state.vs = Number(vs) || 0; state.vr = Number(vr) || 0; state.vy = Number(vy) || 0;
+      state.vs = Math.max(0, Number(vs) || 0); state.vr = Number(vr) || 0; state.vy = Number(vy) || 0;
       if (state.vy > 0.5) state.grounded = false;
       syncWorld();
     },
