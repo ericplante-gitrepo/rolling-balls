@@ -314,7 +314,7 @@
       run(24, 0.18);
       candy(24, -0.24);
       bend(-45, 0.14);
-      rail(10);
+      rail(12);
       candy(24, 0.16);
       run(24, -0.24);
       run(22, 0.12);
@@ -328,7 +328,7 @@
       bend(-45, 0.14);
       hazard('sliding', -0.25, { phase: 0.7 }, 24);
       run(24, 0.18);
-      rail(10);
+      rail(14);
       candy(24, 0.16);
       run(22, -0.22);
     } else if (n === 5) {
@@ -341,7 +341,7 @@
       bend(-45, 0.14, 10, 30);
       hazard('hammer', -0.25, { period: 2.7, phase: 0.6 }, 24);
       run(24, 0.18);
-      rail(11);
+      rail(15);
       candy(24, 0.16);
       run(22, -0.22);
     } else if (n === 6) {
@@ -354,7 +354,7 @@
       run(30, -0.25);
       bend(-45, 0.16, 10, 30);
       jumpDrop(20);
-      rail(11);
+      rail(15);
       candy(24, 0.16);
       run(22, -0.20);
     } else if (n === 7) {
@@ -368,7 +368,7 @@
       split(-1);
       run(24, 0.16);
       bend(45, 0.14, 10, 30);
-      rail(12);
+      rail(15);
       candy(24, 0.16);
       run(22, -0.22);
     } else if (n === 8) {
@@ -389,7 +389,7 @@
       bend(-45, 0.14, 10, 30);
       hazard('hammer', -0.22, { period: 2.8, phase: 1 });
       candy(28, 0.16);
-      rail(12);
+      rail(17);
       hazard('rollball', 0.14, {
         mode: 'across',
         diameter: 2,
@@ -405,7 +405,7 @@
       hazard('hammer', 0.16, { period: 2.8 });
       bend(-45, 0.14, 8.5, 35);
       candy(24, -0.22);
-      rail(12);
+      rail(17);
       bend(-45, 0.16, 8.5, 35);
       run(24, -0.25);
       hazard('hammer', 0.16, { period: 2.8, phase: 0.4 });
@@ -432,7 +432,7 @@
       run(24, 0.18);
       floorBars(7, -0.14, 1.1);
       run(24, 0.16);
-      rail(12);
+      rail(17);
       candy(24, 0.16);
       run(22, -0.22);
     }
@@ -478,6 +478,12 @@
     }
 
     d.hints.sort((a, b) => a.s - b.s);
+    // Spawn on 25 m of flat deck: the ball, camera and framing settle before the first climb.
+    const LEAD = 25;
+    d.pieces.unshift({ len: LEAD });
+    for (const o of d.obstacles) for (const k of ['s', 's0', 's1']) if (typeof o[k] === 'number') o[k] += LEAD;
+    d.checkpoints = d.checkpoints.map(c => typeof c === 'number' ? c + LEAD : { ...c, s: c.s + LEAD });
+    d.hints = d.hints.map(h => ({ ...h, s: h.s + LEAD }));
     return d;
   }
 
