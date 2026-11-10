@@ -81,7 +81,7 @@ async function open(w = 1180, h = 820, opts = {}) {
   const browser = await chromium.launch(LAUNCH);
   const ctx0 = await browser.newContext({ viewport: { width: w, height: h }, hasTouch: !!opts.touch, isMobile: !!opts.touch && w < 900 });
   const ctx = { close: async () => { await ctx0.close().catch(() => {}); await browser.close().catch(() => {}); } };
-  const page = await ctx0.newPage();
+  const page = await ctx0.newPage(); page.setDefaultTimeout(120000); // swiftshader screenshots can take >30 s at 1024x768
   const errors = [], external = [], missing = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });

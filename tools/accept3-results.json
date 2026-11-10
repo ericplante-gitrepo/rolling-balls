@@ -1,0 +1,2105 @@
+{
+  "root": "/workspace/rolling-balls-s3",
+  "when": "Mon Nov 09 2026 19:44:21 GMT-0500 (Eastern Standard Time)",
+  "seedsPerLevel": 20,
+  "pass": 112,
+  "fail": 0,
+  "skip": 1,
+  "perLevel": {
+    "1": {
+      "nominalSec": 20.68,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 20,
+      "finishedEventually": 20,
+      "medianSec": 20.72,
+      "fallsAt": []
+    },
+    "2": {
+      "nominalSec": 21.67,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 20,
+      "finishedEventually": 20,
+      "medianSec": 21.7,
+      "fallsAt": []
+    },
+    "3": {
+      "nominalSec": 22.37,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 18,
+      "finishedEventually": 20,
+      "medianSec": 22.38,
+      "fallsAt": [
+        227.6,
+        236.4
+      ]
+    },
+    "4": {
+      "nominalSec": 24,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 19,
+      "finishedEventually": 20,
+      "medianSec": 24.05,
+      "fallsAt": [
+        258.8
+      ]
+    },
+    "5": {
+      "nominalSec": 24.62,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 18,
+      "finishedEventually": 20,
+      "medianSec": 24.63,
+      "fallsAt": [
+        264.3,
+        264.4
+      ]
+    },
+    "6": {
+      "nominalSec": 23.65,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 17,
+      "finishedEventually": 20,
+      "medianSec": 23.68,
+      "fallsAt": [
+        275.8,
+        286.2,
+        280.8,
+        280.1
+      ]
+    },
+    "7": {
+      "nominalSec": 27.02,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 18,
+      "finishedEventually": 20,
+      "medianSec": 27.07,
+      "fallsAt": [
+        312.7,
+        320.5
+      ]
+    },
+    "8": {
+      "nominalSec": 27.3,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 18,
+      "finishedEventually": 20,
+      "medianSec": 27.32,
+      "fallsAt": [
+        275.4,
+        276.5
+      ]
+    },
+    "9": {
+      "nominalSec": 24.02,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 18,
+      "finishedEventually": 20,
+      "medianSec": 24,
+      "fallsAt": [
+        196.1,
+        202.1
+      ]
+    },
+    "10": {
+      "nominalSec": 30.17,
+      "nominalDone": true,
+      "runs": 20,
+      "cleanRuns": 20,
+      "finishedEventually": 20,
+      "medianSec": 30.18,
+      "fallsAt": []
+    }
+  },
+  "gap": {
+    "framing": [
+      {
+        "target": "ball 65-76% down, 8-9% tall at 4 sizes",
+        "measured": "844x390: 70% down, 8.8%",
+        "pass": true
+      },
+      {
+        "target": "ball 65-76% down, 8-9% tall at 4 sizes",
+        "measured": "390x844: 70% down, 8.8%",
+        "pass": true
+      },
+      {
+        "target": "ball 65-76% down, 8-9% tall at 4 sizes",
+        "measured": "1024x768: 70% down, 8.8%",
+        "pass": true
+      },
+      {
+        "target": "ball 65-76% down, 8-9% tall at 4 sizes",
+        "measured": "1180x820: 70% down, 8.8%",
+        "pass": true
+      },
+      {
+        "target": "horizon 45-50% of screen height",
+        "measured": "844x390: 47.0% rest, 47.2% cruise",
+        "pass": true
+      },
+      {
+        "target": "near track 35-45% of width (phone landscape, video aspect)",
+        "measured": "844x390: 41.4%",
+        "pass": true
+      },
+      {
+        "target": "horizon 45-50% of screen height",
+        "measured": "390x844: 47.0% rest, 47.2% cruise",
+        "pass": true
+      },
+      {
+        "target": "near track width (info only off phone-landscape: fixed vertical FOV)",
+        "measured": "390x844: 194.0%",
+        "pass": true
+      },
+      {
+        "target": "horizon 45-50% of screen height",
+        "measured": "1024x768: 47.0% rest, 47.2% cruise",
+        "pass": true
+      },
+      {
+        "target": "near track width (info only off phone-landscape: fixed vertical FOV)",
+        "measured": "1024x768: 67.2%",
+        "pass": true
+      },
+      {
+        "target": "horizon 45-50% of screen height",
+        "measured": "1180x820: 47.0% rest, 47.2% cruise",
+        "pass": true
+      },
+      {
+        "target": "near track width (info only off phone-landscape: fixed vertical FOV)",
+        "measured": "1180x820: 62.3%",
+        "pass": true
+      }
+    ],
+    "load": [
+      {
+        "target": "cache-busting ?v= + no-cache meta",
+        "measured": "./vendor/three.min.js?v=s3-12, ./game.js?v=s3-12",
+        "pass": true
+      }
+    ],
+    "global": [
+      {
+        "target": "0 backward-spin frames",
+        "measured": "0 backward in 23877 rolling frames (0 off-ratio)",
+        "pass": true
+      },
+      {
+        "target": "noisy bot finishes ~90% (not 100%)",
+        "measured": "186/200 = 93.0% clean runs (noise 0.35, 20 seeds x 10 levels)",
+        "pass": true
+      }
+    ],
+    "input": [
+      {
+        "target": "steering independent of viewport (+-20%)",
+        "measured": "844x390 23.9px=6.1%H, 390x844 51.7px=6.1%H, 1024x768 44.8px=5.8%H, 1180x820 48.6px=5.9%H",
+        "pass": true
+      }
+    ],
+    "1 Curves + banking": [
+      {
+        "target": "no-steer ride-up 0.5-1.5 m at >=10 m/s, never leaves",
+        "measured": "90°/R12/30°@11: 0.6 m; -90°/R12/30°@11: 0.6 m; 60°/R8/35°@10: 0.6 m; 45°/R15/20°@12: 0.7 m; 16 m/s: stays on (1.81 m)",
+        "pass": true
+      },
+      {
+        "target": "camera re-centres <= 0.5 s",
+        "measured": "0.2 s, 0.2 s, 0.35 s, 0.133 s, 0.15 s",
+        "pass": true
+      }
+    ],
+    "2 Slopes": [
+      {
+        "target": "downhill +2..4 m/s / 3 s",
+        "measured": "+3.02 m/s (15%, from 8)",
+        "pass": true
+      },
+      {
+        "target": "cap (15 m/s in spec; now 20 with 16 m/s top speed)",
+        "measured": "max 20 m/s on 25%",
+        "pass": true
+      },
+      {
+        "target": "uphill 20% loses 30-60%",
+        "measured": "35.4% in 2 s",
+        "pass": true
+      },
+      {
+        "target": "camera pitch <= 0.3 s",
+        "measured": "0.083 s to 63%",
+        "pass": true
+      }
+    ],
+    "3 Hammers": [
+      {
+        "target": "period 2-3 s, full width",
+        "measured": "2.583 s, head r -2.05..2.05 (half 2.3)",
+        "pass": true
+      },
+      {
+        "target": "hit 4-8 m/s side, <=2 up, no freeze",
+        "measured": "8 hits, |vr| 4.59/4.59/4.59/4.59/4.6/4.6/4.59/4.6, up max 0",
+        "pass": true
+      }
+    ],
+    "4 Rolling balls": [
+      {
+        "target": "1.5-2.5 m, 4-8 m/s",
+        "measured": "down 2 m @ 6 m/s; across 2 m @ 6 m/s",
+        "pass": true
+      },
+      {
+        "target": "knock like hammers",
+        "measured": "11 hits, |vr| 5.39/5.39/5.4/5.4/5.39/5.39/5.39/5.4/5.39/5.39/5.4",
+        "pass": true
+      }
+    ],
+    "5 Jump pads": [
+      {
+        "target": "vy 8-10, air 0.9-1.2 s, R²>0.98, bounce<0.1",
+        "measured": "vy 10.32, air 0.95 s, R² 1, bounce 0.03 m",
+        "pass": true
+      }
+    ],
+    "6 Side-boost panels": [
+      {
+        "target": "1.5 m in 0.3 s",
+        "measured": "right 1.5 m, left -1.5 m",
+        "pass": true
+      }
+    ],
+    "7 Sliding floor bars": [
+      {
+        "target": "period 1.5-2.5 s, carried, miss = fall",
+        "measured": "2 s, carried true (rel 0.042 m, moved 3.2 m), miss falls true",
+        "pass": true
+      }
+    ],
+    "8 Thin rails": [
+      {
+        "target": "0.4-0.6 m; drags under ~1/10 width stay on (8% must stay on)",
+        "measured": "0.5 m; largest 0.2 s drag that stays on: 2% of width",
+        "pass": false
+      }
+    ],
+    "9 Checkpoint rings": [
+      {
+        "target": "respawn 2.0 s at rest at checkpoint",
+        "measured": "2 s at s=40 (cp 40), speed 0; no-cp 2 s at s=0",
+        "pass": true
+      }
+    ],
+    "11 Levels": [
+      {
+        "target": "10 levels in video order",
+        "measured": "10 levels; first rails L3, hammer L5, pads+gaps L6, hammers+balls L8, bars L10",
+        "pass": true
+      },
+      {
+        "target": "each 10-40 s",
+        "measured": "L1 20.68s, L2 21.67s, L3 22.37s, L4 24s, L5 24.62s, L6 23.65s, L7 27.02s, L8 27.3s, L9 24.02s, L10 30.17s",
+        "pass": true
+      }
+    ],
+    "look": [
+      {
+        "target": "track body: navy #1B1F55 side 0.4 m deep",
+        "measured": "{\"sideDepth\":0.4,\"color\":\"#1B1F55\"}",
+        "pass": true
+      },
+      {
+        "target": "edge band: 0.35 m: navy lip 0.05, yellow 0.10, navy 0.05, mint 0.15",
+        "measured": "{\"yellow\":[0.05,0.15],\"mint\":[0.2,0.35]}",
+        "pass": true
+      },
+      {
+        "target": "track width: decks 4.5-5 m, thin rails 0.5 m (split platforms 1.3-1.6)",
+        "measured": "{\"decks\":[4.6,4.6],\"rails\":[0.5,1.35]}",
+        "pass": true
+      },
+      {
+        "target": "ground: 25 m below the lowest deck, 4 m line pattern",
+        "measured": "{\"drop\":24.7,\"lineSpacing\":4}",
+        "pass": true
+      },
+      {
+        "target": "checkpoint: navy arch >= 4 m tall with mint strip",
+        "measured": "{\"h\":4.09,\"hasMint\":true,\"hasNavy\":true}",
+        "pass": true
+      },
+      {
+        "target": "finish: 5 m bulb ring, white flash, 40 candy confetti",
+        "measured": "{\"ring\":5,\"confetti\":40,\"colors\":[\"#FF8FB1\",\"#9AF0FF\",\"#B6F36A\",\"#FFD23F\"],\"flash\":true}",
+        "pass": true
+      },
+      {
+        "target": "smash: 6-8 chunks + 12 sparks per cube, clear within 1.5 s",
+        "measured": "{\"chunks\":7,\"sparks\":12,\"chunksPerCube\":7,\"clearSec\":1.42}",
+        "pass": true
+      },
+      {
+        "target": "hammer: navy 2 x 1.2 x 1.2 head with coral stripes",
+        "measured": "{\"color\":\"#1B1F55\",\"stripes\":3}",
+        "pass": true
+      },
+      {
+        "target": "rolling ball: coral, navy stripes, 2 m",
+        "measured": "{\"diameters\":[2,2],\"look\":{\"color\":\"#FF6F7D\",\"rings\":2}}",
+        "pass": true
+      },
+      {
+        "target": "coins: lines of 5-8 at 1.5 m, ~0.4 m above the deck",
+        "measured": "{\"runs\":\"269/284 runs of 5-8\",\"short\":[2,4,3,1],\"bottom\":0.435}",
+        "pass": true
+      },
+      {
+        "target": "coin face: median pixel within 6% of #FFD23F at 1180x820",
+        "measured": "{\"median\":\"#FFD23F\",\"maxDev\":0,\"sample\":{\"med\":[255,210,63],\"rad\":7,\"at\":[590,511]}}",
+        "pass": true
+      },
+      {
+        "target": "UI: progress bar top centre 40% wide, level label above",
+        "measured": "{\"w\":0.3864406779661017,\"cx\":0.5,\"top\":0.06585365853658537}",
+        "pass": true
+      },
+      {
+        "target": "UI: Level Complete: coins shown, mint Continue 220x64 bottom centre",
+        "measured": "{\"w\":220,\"h\":64,\"cx\":0.5,\"cy\":0.8951219512195122,\"bg\":\"rgb(62, 230, 176)\"}",
+        "pass": true
+      },
+      {
+        "target": "speed feel: >= 10 m/s: FOV +4 deg, edge streaks at 8% alpha",
+        "measured": "{\"slow\":{\"fov\":60,\"streak\":\"0\"},\"fast\":{\"v\":16,\"fov\":63.96,\"streak\":\"1\"}}",
+        "pass": true
+      }
+    ]
+  },
+  "results": [
+    {
+      "group": "load",
+      "name": "844x390 all 10 levels load+run with no console errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "844x390 no external requests / 4xx",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "camera",
+      "name": "844x390 ball ~70% down the screen (65-76%)",
+      "pass": true,
+      "detail": {
+        "down": 0.7
+      }
+    },
+    {
+      "group": "camera",
+      "name": "844x390 ball 8-9% of screen height (AD update; 7.8-9.5 tolerance)",
+      "pass": true,
+      "detail": {
+        "size": 0.088
+      }
+    },
+    {
+      "group": "look",
+      "name": "844x390 planet fully on screen, upper-left",
+      "pass": true,
+      "detail": {
+        "left": 130.32403859554077,
+        "right": 189.9572233596397,
+        "top": 40.0737543782087,
+        "bottom": 105.06137127530374
+      }
+    },
+    {
+      "group": "load",
+      "name": "844x390 no errors after screenshot tour",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "390x844 all 10 levels load+run with no console errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "390x844 no external requests / 4xx",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "camera",
+      "name": "390x844 ball ~70% down the screen (65-76%)",
+      "pass": true,
+      "detail": {
+        "down": 0.7
+      }
+    },
+    {
+      "group": "camera",
+      "name": "390x844 ball 8-9% of screen height (AD update; 7.8-9.5 tolerance)",
+      "pass": true,
+      "detail": {
+        "size": 0.088
+      }
+    },
+    {
+      "group": "look",
+      "name": "390x844 planet fully on screen, upper-left",
+      "pass": true,
+      "detail": {
+        "left": 44.24399765312445,
+        "right": 104.2601100783743,
+        "top": 127.23460493848678,
+        "bottom": 192.08384966602415
+      }
+    },
+    {
+      "group": "load",
+      "name": "390x844 no errors after screenshot tour",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "1024x768 all 10 levels load+run with no console errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "1024x768 no external requests / 4xx",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "camera",
+      "name": "1024x768 ball ~70% down the screen (65-76%)",
+      "pass": true,
+      "detail": {
+        "down": 0.7
+      }
+    },
+    {
+      "group": "camera",
+      "name": "1024x768 ball 8-9% of screen height (AD update; 7.8-9.5 tolerance)",
+      "pass": true,
+      "detail": {
+        "size": 0.088
+      }
+    },
+    {
+      "group": "look",
+      "name": "1024x768 planet fully on screen, upper-left",
+      "pass": true,
+      "detail": {
+        "left": 136.51224757893021,
+        "right": 252.64818246329276,
+        "top": 78.91447016016483,
+        "bottom": 206.8900849729058
+      }
+    },
+    {
+      "group": "load",
+      "name": "1024x768 no errors after screenshot tour",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "1180x820 all 10 levels load+run with no console errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "1180x820 no external requests / 4xx",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "camera",
+      "name": "1180x820 ball ~70% down the screen (65-76%)",
+      "pass": true,
+      "detail": {
+        "down": 0.7
+      }
+    },
+    {
+      "group": "camera",
+      "name": "1180x820 ball 8-9% of screen height (AD update; 7.8-9.5 tolerance)",
+      "pass": true,
+      "detail": {
+        "size": 0.088
+      }
+    },
+    {
+      "group": "load",
+      "name": "game.js + three.min.js load with ?v=<build id>, no-cache meta present",
+      "pass": true,
+      "detail": {
+        "scripts": [
+          "./vendor/three.min.js?v=s3-12",
+          "./game.js?v=s3-12"
+        ],
+        "meta": [
+          "Cache-Control=no-cache, no-store, must-revalidate",
+          "Pragma=no-cache",
+          "Expires=0"
+        ]
+      }
+    },
+    {
+      "group": "look",
+      "name": "1180x820 planet fully on screen, upper-left",
+      "pass": true,
+      "detail": {
+        "left": 162.20043502249226,
+        "right": 286.10051193377853,
+        "top": 84.25763741059265,
+        "bottom": 220.898267809613
+      }
+    },
+    {
+      "group": "load",
+      "name": "1180x820 no errors after screenshot tour",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "load",
+      "name": "webkit (not available on box)",
+      "pass": null,
+      "detail": "Error: browserType.launch: "
+    },
+    {
+      "group": "spin",
+      "name": "rolls the way it moves: forward",
+      "pass": true,
+      "detail": {
+        "n": 272,
+        "good": 272,
+        "bad": 0,
+        "skipped": 0,
+        "worstDot": 1,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "rolls the way it moves: zigzag",
+      "pass": true,
+      "detail": {
+        "n": 549,
+        "good": 549,
+        "bad": 0,
+        "skipped": 0,
+        "worstDot": 0.963,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "rolls the way it moves: at30Hz",
+      "pass": true,
+      "detail": {
+        "n": 78,
+        "good": 78,
+        "bad": 0,
+        "skipped": 0,
+        "worstDot": 1,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "rolls the way it moves: at120Hz",
+      "pass": true,
+      "detail": {
+        "n": 540,
+        "good": 540,
+        "bad": 0,
+        "skipped": 0,
+        "worstDot": 0.995,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "seeded drags on all levels: 0 backward-spin frames",
+      "pass": true,
+      "detail": {
+        "n": 23877,
+        "bad": 0,
+        "backward": 0,
+        "worstDot": 0.992,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "seeded drags on all levels: rolling matches travel (>=99.5% of frames)",
+      "pass": true,
+      "detail": {
+        "n": 23877,
+        "bad": 0,
+        "backward": 0,
+        "worstDot": 0.992,
+        "samples": []
+      }
+    },
+    {
+      "group": "spin",
+      "name": "no errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "input",
+      "name": "mouse: drag up = forward",
+      "pass": true,
+      "detail": {
+        "ny": 0.9072110286320255,
+        "vs": 12.74
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: drag right = ball moves right on screen",
+      "pass": true,
+      "detail": {
+        "nx": 0.7884518107473281,
+        "screenDx": 93.43,
+        "dr": 1.24
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: drag left = ball moves left on screen",
+      "pass": true,
+      "detail": {
+        "nx": -0.9266071180716925,
+        "screenDx": -77.71,
+        "dr": -1.03
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: drag right inside a curve = screen right",
+      "pass": true,
+      "detail": {
+        "turn": 45,
+        "dr": 0.94,
+        "screenDx": 84.71
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: pull back brakes, never reverses",
+      "pass": true,
+      "detail": {
+        "ny": -0.9434476980228214,
+        "vs": 0
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: release clears input",
+      "pass": true,
+      "detail": {
+        "active": false,
+        "nx": 0,
+        "ny": 0
+      }
+    },
+    {
+      "group": "input",
+      "name": "mouse: no errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "input",
+      "name": "touch: drag up = forward",
+      "pass": true,
+      "detail": {
+        "ny": 0.9072110286320255,
+        "vs": 12.74
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: drag right = ball moves right on screen",
+      "pass": true,
+      "detail": {
+        "nx": 0.7618139233076417,
+        "screenDx": 90.21,
+        "dr": 1.2
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: drag left = ball moves left on screen",
+      "pass": true,
+      "detail": {
+        "nx": -0.917022846321167,
+        "screenDx": -77.63,
+        "dr": -1.03
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: drag right inside a curve = screen right",
+      "pass": true,
+      "detail": {
+        "turn": 45,
+        "dr": 0.94,
+        "screenDx": 84.42
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: pull back brakes, never reverses",
+      "pass": true,
+      "detail": {
+        "ny": -0.904524969821249,
+        "vs": 0
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: release clears input",
+      "pass": true,
+      "detail": {
+        "active": false,
+        "nx": 0,
+        "ny": 0
+      }
+    },
+    {
+      "group": "input",
+      "name": "touch: no errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "input",
+      "name": "same drag (5% of short side) moves the ball the same share of the screen at all 4 sizes (+-20%)",
+      "pass": true,
+      "detail": {
+        "meanShareOfH": 0.06,
+        "out": [
+          {
+            "size": "844x390",
+            "dragPx": 20,
+            "nx": 0.261,
+            "dr": 0.592,
+            "movePx": 23.9,
+            "shareOfH": 0.0613,
+            "errors": 0
+          },
+          {
+            "size": "390x844",
+            "dragPx": 20,
+            "nx": 0.261,
+            "dr": 0.592,
+            "movePx": 51.7,
+            "shareOfH": 0.0613,
+            "errors": 0
+          },
+          {
+            "size": "1024x768",
+            "dragPx": 38,
+            "nx": 0.249,
+            "dr": 0.565,
+            "movePx": 44.8,
+            "shareOfH": 0.0584,
+            "errors": 0
+          },
+          {
+            "size": "1180x820",
+            "dragPx": 41,
+            "nx": 0.253,
+            "dr": 0.573,
+            "movePx": 48.6,
+            "shareOfH": 0.0592,
+            "errors": 0
+          }
+        ]
+      }
+    },
+    {
+      "group": "speed",
+      "name": "top speed ~16 m/s (Eric, Nov 9; was 12) reached, 0-90% in 0.7-1.6 s",
+      "pass": true,
+      "detail": {
+        "MAX_SPEED": 16,
+        "t90": 1.37,
+        "vAt4s": 15.98
+      }
+    },
+    {
+      "group": "speed",
+      "name": "coast keeps 25-80% after 2 s",
+      "pass": true,
+      "detail": {
+        "v0": 15.98,
+        "vAfter2s": 5.32
+      }
+    },
+    {
+      "group": "speed",
+      "name": "brake stops < 1.2 s, never reverses",
+      "pass": true,
+      "detail": {
+        "stopSec": 0.65,
+        "minVs": 0
+      }
+    },
+    {
+      "group": "steer",
+      "name": "lateral 90% in < 0.35 s; release drift < 0.6 m",
+      "pass": true,
+      "detail": {
+        "t90": 0.167,
+        "releaseDrift": 0.017
+      }
+    },
+    {
+      "group": "rails",
+      "name": "guard rail holds at pad speed with full steer and bounces",
+      "pass": true,
+      "detail": {
+        "maxAbsR": 1.85,
+        "half": 2.3,
+        "fell": false,
+        "bounced": true
+      }
+    },
+    {
+      "group": "G1",
+      "name": "curves 45-90 deg R8-15 bank20-35: no-steer ball rides 0.5-1.5 m outward at 10-12 m/s",
+      "pass": true,
+      "detail": [
+        {
+          "R": 12,
+          "deg": 90,
+          "bank": 30,
+          "v": 11,
+          "maxOutward": 0.6,
+          "maxRise": 0.22,
+          "left": false,
+          "recenterSec": 0.2
+        },
+        {
+          "R": 12,
+          "deg": -90,
+          "bank": 30,
+          "v": 11,
+          "maxOutward": 0.6,
+          "maxRise": 0.22,
+          "left": false,
+          "recenterSec": 0.2
+        },
+        {
+          "R": 8,
+          "deg": 60,
+          "bank": 35,
+          "v": 10,
+          "maxOutward": 0.6,
+          "maxRise": 0.24,
+          "left": false,
+          "recenterSec": 0.35
+        },
+        {
+          "R": 15,
+          "deg": 45,
+          "bank": 20,
+          "v": 12,
+          "maxOutward": 0.7,
+          "maxRise": 0.16,
+          "left": false,
+          "recenterSec": 0.133
+        }
+      ]
+    },
+    {
+      "group": "G1",
+      "name": "curve at top speed with no steering: stays on the track",
+      "pass": true,
+      "detail": {
+        "R": 12,
+        "deg": 90,
+        "bank": 30,
+        "v": 16,
+        "maxOutward": 1.81,
+        "maxRise": 0.98,
+        "left": false,
+        "recenterSec": 0.15
+      }
+    },
+    {
+      "group": "G1",
+      "name": "camera re-centres behind the ball within 0.5 s after a turn",
+      "pass": true,
+      "detail": [
+        0.2,
+        0.2,
+        0.35,
+        0.133,
+        0.15
+      ]
+    },
+    {
+      "group": "G1",
+      "name": "levels use 45-90 deg / R 8-15 / bank 20-35 turns",
+      "pass": true,
+      "detail": {
+        "total": 34,
+        "inSpec": 26
+      }
+    },
+    {
+      "group": "G2",
+      "name": "downhill 15%, no input, from 8 m/s: +2..+4 m/s in 3 s",
+      "pass": true,
+      "detail": {
+        "from": 8,
+        "after3s": 11.02,
+        "gain": 3.02
+      }
+    },
+    {
+      "group": "G2",
+      "name": "downhill 25% capped at DOWNHILL_CAP (top speed + 3; spec said 15 before the 16 m/s change)",
+      "pass": true,
+      "detail": {
+        "vmax": 20,
+        "cap": 20
+      }
+    },
+    {
+      "group": "G2",
+      "name": "uphill 20% holding forward from top speed: loses 30-60% in 2 s",
+      "pass": true,
+      "detail": {
+        "from": 16,
+        "after2s": 10.34,
+        "lossPct": 35.4
+      }
+    },
+    {
+      "group": "G2",
+      "name": "never rolls backward while holding forward on 25%",
+      "pass": true,
+      "detail": {
+        "minVs": 0.419
+      }
+    },
+    {
+      "group": "G2",
+      "name": "camera pitches with the slope within 0.3 s (63%)",
+      "pass": true,
+      "detail": {
+        "p0": -0.035,
+        "pEnd": -0.231,
+        "t63": 0.083
+      }
+    },
+    {
+      "group": "G3",
+      "name": "hammer period 2.0-3.0 s",
+      "pass": true,
+      "detail": {
+        "period": 2.583,
+        "minR": -2.05,
+        "maxR": 2.05,
+        "half": 2.3
+      }
+    },
+    {
+      "group": "G3",
+      "name": "hammer sweeps full deck width",
+      "pass": true,
+      "detail": {
+        "period": 2.583,
+        "minR": -2.05,
+        "maxR": 2.05,
+        "half": 2.3
+      }
+    },
+    {
+      "group": "G3",
+      "name": "hammer hit: 4-8 m/s sideways, <= 2 m/s up, never freezes",
+      "pass": true,
+      "detail": [
+        {
+          "dvr": -4.59,
+          "vr": -4.59,
+          "vyUp": 0,
+          "vsAfter": 7.78,
+          "frozen": false
+        },
+        {
+          "dvr": -4.59,
+          "vr": -4.59,
+          "vyUp": 0,
+          "vsAfter": 7.78,
+          "frozen": false
+        },
+        {
+          "dvr": -4.59,
+          "vr": -4.59,
+          "vyUp": 0,
+          "vsAfter": 7.78,
+          "frozen": false
+        },
+        {
+          "dvr": -4.59,
+          "vr": -4.59,
+          "vyUp": 0,
+          "vsAfter": 7.71,
+          "frozen": false
+        },
+        {
+          "dvr": -4.6,
+          "vr": -4.6,
+          "vyUp": 0,
+          "vsAfter": 7.64,
+          "frozen": false
+        },
+        {
+          "dvr": -4.6,
+          "vr": -4.6,
+          "vyUp": 0,
+          "vsAfter": 7.78,
+          "frozen": false
+        },
+        {
+          "dvr": -4.59,
+          "vr": -4.59,
+          "vyUp": 0,
+          "vsAfter": 7.86,
+          "frozen": false
+        },
+        {
+          "dvr": -4.6,
+          "vr": -4.6,
+          "vyUp": 0,
+          "vsAfter": 7.7,
+          "frozen": false
+        }
+      ]
+    },
+    {
+      "group": "G3",
+      "name": "hammer hit on an open edge knocks the ball off",
+      "pass": true,
+      "detail": {
+        "hits": 8,
+        "fellAfterHit": 8
+      }
+    },
+    {
+      "group": "G4",
+      "name": "rolling balls 1.5-2.5 m, 4-8 m/s",
+      "pass": true,
+      "detail": {
+        "down": {
+          "diameter": 2,
+          "speedMedian": 6,
+          "hits": [
+            {
+              "dvr": -5.39,
+              "vr": -5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": -5.39,
+              "vr": -5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": -5.4,
+              "vr": -5.4,
+              "vyUp": 0,
+              "vs": 13.58
+            },
+            {
+              "dvr": 5.4,
+              "vr": 5.4,
+              "vyUp": 0,
+              "vs": 13.58
+            },
+            {
+              "dvr": 5.39,
+              "vr": 5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": 5.39,
+              "vr": 5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            }
+          ]
+        },
+        "across": {
+          "diameter": 2,
+          "speedMedian": 6,
+          "hits": [
+            {
+              "dvr": 5.39,
+              "vr": 5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": 5.4,
+              "vr": 5.4,
+              "vyUp": 0,
+              "vs": 13.58
+            },
+            {
+              "dvr": 5.39,
+              "vr": 5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": 5.39,
+              "vr": 5.39,
+              "vyUp": 0,
+              "vs": 13.66
+            },
+            {
+              "dvr": 5.4,
+              "vr": 5.4,
+              "vyUp": 0,
+              "vs": 13.58
+            }
+          ]
+        }
+      }
+    },
+    {
+      "group": "G4",
+      "name": "rolling ball hit: 4-8 m/s sideways, <= 2 up",
+      "pass": true,
+      "detail": [
+        {
+          "dvr": -5.39,
+          "vr": -5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": -5.39,
+          "vr": -5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": -5.4,
+          "vr": -5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        }
+      ]
+    },
+    {
+      "group": "G5",
+      "name": "jump pad vy 8-10, airtime 0.9-1.2 s, R2 > 0.98, bounce < 0.1 m",
+      "pass": true,
+      "detail": {
+        "vy0": 10.32,
+        "airtime": 0.95,
+        "R2": 1,
+        "bounce": 0.03
+      }
+    },
+    {
+      "group": "G6",
+      "name": "side boost shoves one lane (1.35-1.65 m) within 0.3 s, both ways",
+      "pass": true,
+      "detail": [
+        {
+          "dir": 1,
+          "disp03": 1.5
+        },
+        {
+          "dir": -1,
+          "disp03": -1.5
+        }
+      ]
+    },
+    {
+      "group": "G7",
+      "name": "sliding bars: period 1.5-2.5 s, carry a still ball, fall when missed",
+      "pass": true,
+      "detail": {
+        "period": 2,
+        "carried": true,
+        "maxRelToBar": 0.042,
+        "carriedSpan": 3.2,
+        "fellWhenMissed": true
+      }
+    },
+    {
+      "group": "G8",
+      "name": "thin rails 0.4-0.6 m; small (3%) drag stays on, big (15%) drag falls at 12 m/s",
+      "pass": true,
+      "detail": {
+        "width": 0.5,
+        "small": {
+          "frac": 0.03,
+          "nx": 0.206,
+          "hold": 0.15,
+          "fell": false
+        },
+        "big": {
+          "frac": 0.15,
+          "nx": 1,
+          "hold": 0.25,
+          "fell": true
+        },
+        "sweep": [
+          {
+            "frac": 0.02,
+            "nx": 0.109,
+            "hold": 0.2,
+            "fell": false
+          },
+          {
+            "frac": 0.04,
+            "nx": 0.304,
+            "hold": 0.2,
+            "fell": true
+          },
+          {
+            "frac": 0.06,
+            "nx": 0.5,
+            "hold": 0.2,
+            "fell": true
+          },
+          {
+            "frac": 0.08,
+            "nx": 0.695,
+            "hold": 0.2,
+            "fell": true
+          },
+          {
+            "frac": 0.1,
+            "nx": 0.891,
+            "hold": 0.2,
+            "fell": true
+          },
+          {
+            "frac": 0.12,
+            "nx": 1,
+            "hold": 0.2,
+            "fell": true
+          },
+          {
+            "frac": 0.15,
+            "nx": 1,
+            "hold": 0.2,
+            "fell": true
+          }
+        ]
+      }
+    },
+    {
+      "group": "G9",
+      "name": "respawn 2.0 s at rest at last checkpoint (else start)",
+      "pass": true,
+      "detail": {
+        "rs": {
+          "cpIndex": -1,
+          "respawnSec": 2,
+          "respawnS": 0,
+          "respawnR": 0,
+          "speedAfter": 0,
+          "camDrop": 0
+        },
+        "rc": {
+          "cpIndex": 0,
+          "respawnSec": 2,
+          "respawnS": 40,
+          "respawnR": 0,
+          "speedAfter": 0,
+          "camDrop": 0
+        }
+      }
+    },
+    {
+      "group": "camera",
+      "name": "camera holds during a fall (drops < 1.5 m)",
+      "pass": true,
+      "detail": {
+        "rs": 0,
+        "rc": 0
+      }
+    },
+    {
+      "group": "timestep",
+      "name": "same input at 30/60/120 Hz ends within 5 cm (curvy L2)",
+      "pass": true,
+      "detail": {
+        "hz30": [
+          46.291,
+          -0.36
+        ],
+        "hz60": [
+          46.291,
+          -0.36
+        ],
+        "hz120": [
+          46.291,
+          -0.36
+        ]
+      }
+    },
+    {
+      "group": "camera",
+      "name": "camera smooth on curvy L9 (frame dv < 0.06 m, step < 0.4 m)",
+      "pass": true,
+      "detail": {
+        "maxFrameDeltaVel": 0.0107,
+        "maxStepPerFrame": 0.306
+      }
+    },
+    {
+      "group": "levels",
+      "name": "10 levels; mechanics appear in the video order (rails > hammer > pads/gaps > hammers+balls > bars)",
+      "pass": true,
+      "detail": {
+        "order": {
+          "rails": 3,
+          "hammer": 5,
+          "padsGaps": 6,
+          "hammerBalls": 8,
+          "bars": 10
+        },
+        "levels": [
+          [
+            1,
+            "First Roll",
+            288
+          ],
+          [
+            2,
+            "Smash Bend",
+            284
+          ],
+          [
+            3,
+            "Thin Rails",
+            319
+          ],
+          [
+            4,
+            "Slide Gate",
+            323
+          ],
+          [
+            5,
+            "Hammer Time",
+            323
+          ],
+          [
+            6,
+            "Pads & Gaps",
+            345
+          ],
+          [
+            7,
+            "Side Step",
+            379
+          ],
+          [
+            8,
+            "Rolling Thunder",
+            363
+          ],
+          [
+            9,
+            "Big Bowl",
+            350
+          ],
+          [
+            10,
+            "Sliding Bars",
+            431
+          ]
+        ]
+      }
+    },
+    {
+      "group": "physics",
+      "name": "no errors",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "look",
+      "name": "844x390 horizon at 45-50% of screen height (rest + 16 m/s)",
+      "pass": true,
+      "detail": {
+        "rest": {
+          "hz": 0.47,
+          "track": 0.414,
+          "fov": 60
+        },
+        "cruise": {
+          "hz": 0.472,
+          "track": 0.408,
+          "fov": 64
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "844x390 near track fills 35-45% of screen width at the bottom edge",
+      "pass": true,
+      "detail": {
+        "rest": {
+          "hz": 0.47,
+          "track": 0.414,
+          "fov": 60
+        },
+        "cruise": {
+          "hz": 0.472,
+          "track": 0.408,
+          "fov": 64
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "390x844 horizon at 45-50% of screen height (rest + 16 m/s)",
+      "pass": true,
+      "detail": {
+        "rest": {
+          "hz": 0.47,
+          "track": 1.94,
+          "fov": 60
+        },
+        "cruise": {
+          "hz": 0.472,
+          "track": 1.912,
+          "fov": 64
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "1024x768 horizon at 45-50% of screen height (rest + 16 m/s)",
+      "pass": true,
+      "detail": {
+        "rest": {
+          "hz": 0.47,
+          "track": 0.672,
+          "fov": 60
+        },
+        "cruise": {
+          "hz": 0.472,
+          "track": 0.663,
+          "fov": 64
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "1180x820 horizon at 45-50% of screen height (rest + 16 m/s)",
+      "pass": true,
+      "detail": {
+        "rest": {
+          "hz": 0.47,
+          "track": 0.623,
+          "fov": 60
+        },
+        "cruise": {
+          "hz": 0.472,
+          "track": 0.614,
+          "fov": 64
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "track body: navy #1B1F55 side 0.4 m deep",
+      "pass": true,
+      "detail": {
+        "sideDepth": 0.4,
+        "color": "#1B1F55"
+      }
+    },
+    {
+      "group": "look",
+      "name": "edge band: 0.35 m: navy lip 0.05, yellow 0.10, navy 0.05, mint 0.15",
+      "pass": true,
+      "detail": {
+        "yellow": [
+          0.05,
+          0.15
+        ],
+        "mint": [
+          0.2,
+          0.35
+        ]
+      }
+    },
+    {
+      "group": "look",
+      "name": "track width: decks 4.5-5 m, thin rails 0.5 m (split platforms 1.3-1.6)",
+      "pass": true,
+      "detail": {
+        "decks": [
+          4.6,
+          4.6
+        ],
+        "rails": [
+          0.5,
+          1.35
+        ]
+      }
+    },
+    {
+      "group": "look",
+      "name": "ground: 25 m below the lowest deck, 4 m line pattern",
+      "pass": true,
+      "detail": {
+        "drop": 24.7,
+        "lineSpacing": 4
+      }
+    },
+    {
+      "group": "look",
+      "name": "checkpoint: navy arch >= 4 m tall with mint strip",
+      "pass": true,
+      "detail": {
+        "h": 4.09,
+        "hasMint": true,
+        "hasNavy": true
+      }
+    },
+    {
+      "group": "look",
+      "name": "finish: 5 m bulb ring, white flash, 40 candy confetti",
+      "pass": true,
+      "detail": {
+        "ring": 5,
+        "confetti": 40,
+        "colors": [
+          "#FF8FB1",
+          "#9AF0FF",
+          "#B6F36A",
+          "#FFD23F"
+        ],
+        "flash": true
+      }
+    },
+    {
+      "group": "look",
+      "name": "smash: 6-8 chunks + 12 sparks per cube, clear within 1.5 s",
+      "pass": true,
+      "detail": {
+        "chunks": 7,
+        "sparks": 12,
+        "chunksPerCube": 7,
+        "clearSec": 1.42
+      }
+    },
+    {
+      "group": "look",
+      "name": "hammer: navy 2 x 1.2 x 1.2 head with coral stripes",
+      "pass": true,
+      "detail": {
+        "color": "#1B1F55",
+        "stripes": 3
+      }
+    },
+    {
+      "group": "look",
+      "name": "rolling ball: coral, navy stripes, 2 m",
+      "pass": true,
+      "detail": {
+        "diameters": [
+          2,
+          2
+        ],
+        "look": {
+          "color": "#FF6F7D",
+          "rings": 2
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "coins: lines of 5-8 at 1.5 m, ~0.4 m above the deck",
+      "pass": true,
+      "detail": {
+        "runs": "269/284 runs of 5-8",
+        "short": [
+          2,
+          4,
+          3,
+          1
+        ],
+        "bottom": 0.435
+      }
+    },
+    {
+      "group": "look",
+      "name": "coin face: median pixel within 6% of #FFD23F at 1180x820",
+      "pass": true,
+      "detail": {
+        "median": "#FFD23F",
+        "maxDev": 0,
+        "sample": {
+          "med": [
+            255,
+            210,
+            63
+          ],
+          "rad": 7,
+          "at": [
+            590,
+            511
+          ]
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "UI: progress bar top centre 40% wide, level label above",
+      "pass": true,
+      "detail": {
+        "w": 0.3864406779661017,
+        "cx": 0.5,
+        "top": 0.06585365853658537
+      }
+    },
+    {
+      "group": "look",
+      "name": "UI: Level Complete: coins shown, mint Continue 220x64 bottom centre",
+      "pass": true,
+      "detail": {
+        "w": 220,
+        "h": 64,
+        "cx": 0.5,
+        "cy": 0.8951219512195122,
+        "bg": "rgb(62, 230, 176)"
+      }
+    },
+    {
+      "group": "look",
+      "name": "speed feel: >= 10 m/s: FOV +4 deg, edge streaks at 8% alpha",
+      "pass": true,
+      "detail": {
+        "slow": {
+          "fov": 60,
+          "streak": "0"
+        },
+        "fast": {
+          "v": 16,
+          "fov": 63.96,
+          "streak": "1"
+        }
+      }
+    },
+    {
+      "group": "look",
+      "name": "no page errors in look checks",
+      "pass": true,
+      "detail": []
+    },
+    {
+      "group": "levels",
+      "name": "L1 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 1,
+        "seed": 1,
+        "done": true,
+        "t": 20.68,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 140,
+        "maxSpeed": 17.85
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L2 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 2,
+        "seed": 1,
+        "done": true,
+        "t": 21.67,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 138,
+        "maxSpeed": 17.79
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L3 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 3,
+        "seed": 1,
+        "done": true,
+        "t": 22.37,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 156,
+        "maxSpeed": 17.69
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L4 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 4,
+        "seed": 1,
+        "done": true,
+        "t": 24,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 137,
+        "maxSpeed": 18.48
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L5 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 5,
+        "seed": 1,
+        "done": true,
+        "t": 24.62,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 150,
+        "maxSpeed": 17.78
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L6 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 6,
+        "seed": 1,
+        "done": true,
+        "t": 23.65,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 147,
+        "maxSpeed": 20.98
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L7 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 7,
+        "seed": 1,
+        "done": true,
+        "t": 27.02,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 186,
+        "maxSpeed": 16.98
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L8 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 8,
+        "seed": 1,
+        "done": true,
+        "t": 27.3,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 160,
+        "maxSpeed": 18.71
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L9 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 9,
+        "seed": 1,
+        "done": true,
+        "t": 24.02,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 156,
+        "maxSpeed": 18.43
+      }
+    },
+    {
+      "group": "levels",
+      "name": "L10 nominal bot: 0 falls, 10-40 s",
+      "pass": true,
+      "detail": {
+        "level": 10,
+        "seed": 1,
+        "done": true,
+        "t": 30.17,
+        "falls": 0,
+        "fallAt": [],
+        "coins": 179,
+        "maxSpeed": 18.49
+      }
+    },
+    {
+      "group": "levels",
+      "name": "seeded noisy bot clean-finish rate overall ~90% (85-99%)",
+      "pass": true,
+      "detail": {
+        "rate": 0.93,
+        "perLevel": {
+          "1": "20/20",
+          "2": "20/20",
+          "3": "18/20",
+          "4": "19/20",
+          "5": "18/20",
+          "6": "17/20",
+          "7": "18/20",
+          "8": "18/20",
+          "9": "18/20",
+          "10": "20/20"
+        }
+      }
+    },
+    {
+      "group": "levels",
+      "name": "all levels complete with 0 falls at 30 Hz",
+      "pass": true,
+      "detail": [
+        [
+          1,
+          true,
+          20.7,
+          0
+        ],
+        [
+          2,
+          true,
+          21.67,
+          0
+        ],
+        [
+          3,
+          true,
+          22.37,
+          0
+        ],
+        [
+          4,
+          true,
+          24,
+          0
+        ],
+        [
+          5,
+          true,
+          24.6,
+          0
+        ],
+        [
+          6,
+          true,
+          23.67,
+          0
+        ],
+        [
+          7,
+          true,
+          27.03,
+          0
+        ],
+        [
+          8,
+          true,
+          27.37,
+          0
+        ],
+        [
+          9,
+          true,
+          24.1,
+          0
+        ],
+        [
+          10,
+          true,
+          30.17,
+          0
+        ]
+      ]
+    },
+    {
+      "group": "levels",
+      "name": "all levels complete with 0 falls at 120 Hz",
+      "pass": true,
+      "detail": [
+        [
+          1,
+          true,
+          20.67,
+          0
+        ],
+        [
+          2,
+          true,
+          21.66,
+          0
+        ],
+        [
+          3,
+          true,
+          22.37,
+          0
+        ],
+        [
+          4,
+          true,
+          24,
+          0
+        ],
+        [
+          5,
+          true,
+          24.61,
+          0
+        ],
+        [
+          6,
+          true,
+          23.64,
+          0
+        ],
+        [
+          7,
+          true,
+          27.02,
+          0
+        ],
+        [
+          8,
+          true,
+          27.3,
+          0
+        ],
+        [
+          9,
+          true,
+          24.02,
+          0
+        ],
+        [
+          10,
+          true,
+          30.16,
+          0
+        ]
+      ]
+    },
+    {
+      "group": "levels",
+      "name": "Continue after level 10 loops to level 1",
+      "pass": true,
+      "detail": {
+        "level": 1
+      }
+    },
+    {
+      "group": "levels",
+      "name": "no page errors during level runs",
+      "pass": true,
+      "detail": []
+    }
+  ]
+}

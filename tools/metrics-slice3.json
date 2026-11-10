@@ -1,0 +1,895 @@
+{
+  "cfg": {
+    "BALL_R": 0.45,
+    "GRAVITY": 22,
+    "MAX_SPEED": 16,
+    "ACCEL": 16,
+    "BRAKE": 21,
+    "ROLL_DRAG": 0.15,
+    "COAST_DRAG": 0.55,
+    "DOWNHILL_CAP": 20,
+    "PAD_SPEED": 21,
+    "PAD_DURATION": 1.2,
+    "PAD_VY": 10.5,
+    "FAST_SPEED": 10,
+    "LAT_MAX": 8.5,
+    "LAT_RESPONSE": 14,
+    "AIR_RESPONSE": 2.5,
+    "SLOPE_G": 10,
+    "LAT_G": 22,
+    "DOWNHILL_DRAG": 0.05,
+    "UPHILL_DRIVE_CUT": 0.85,
+    "KNOCK_T": 0.6,
+    "BANK_DAMP": 4,
+    "RESPAWN_S": 2,
+    "INPUT_GRACE": 0.4,
+    "SIDE_T": 0.25,
+    "FIXED_DT": 0.008333333333333333,
+    "CAMERA_BEHIND": 8.5,
+    "CAMERA_ABOVE": 2.3,
+    "LOOK_AHEAD": 10,
+    "LOOK_HEIGHT": 2.1,
+    "CAMERA_LATERAL": 0.6,
+    "FOV": 60,
+    "FAST_FOV": 64,
+    "CAMERA_TAU": 0.11,
+    "FOV_TAU": 0.25,
+    "GUARD_HEIGHT": 0.35,
+    "RAIL_RESTITUTION": 0.35
+  },
+  "accel": {
+    "t90": 1.37,
+    "vAt4s": 15.98
+  },
+  "coast": {
+    "v0": 15.98,
+    "vAfter2s": 5.32
+  },
+  "brake": {
+    "stopSec": 0.65,
+    "minVs": 0
+  },
+  "lateral": {
+    "t90": 0.167,
+    "releaseDrift": 0.017
+  },
+  "rail": {
+    "maxAbsR": 1.85,
+    "half": 2.3,
+    "fell": false,
+    "bounced": true
+  },
+  "curve": [
+    {
+      "R": 12,
+      "deg": 90,
+      "bank": 30,
+      "v": 11,
+      "maxOutward": 0.6,
+      "maxRise": 0.22,
+      "left": false,
+      "recenterSec": 0.2
+    },
+    {
+      "R": 12,
+      "deg": -90,
+      "bank": 30,
+      "v": 11,
+      "maxOutward": 0.6,
+      "maxRise": 0.22,
+      "left": false,
+      "recenterSec": 0.2
+    },
+    {
+      "R": 8,
+      "deg": 60,
+      "bank": 35,
+      "v": 10,
+      "maxOutward": 0.6,
+      "maxRise": 0.24,
+      "left": false,
+      "recenterSec": 0.35
+    },
+    {
+      "R": 15,
+      "deg": 45,
+      "bank": 20,
+      "v": 12,
+      "maxOutward": 0.7,
+      "maxRise": 0.16,
+      "left": false,
+      "recenterSec": 0.133
+    },
+    {
+      "R": 12,
+      "deg": 90,
+      "bank": 30,
+      "v": 16,
+      "maxOutward": 1.81,
+      "maxRise": 0.98,
+      "left": false,
+      "recenterSec": 0.15
+    }
+  ],
+  "downhill15": {
+    "from": 8,
+    "after3s": 11.02,
+    "gain": 3.02
+  },
+  "downhill25": {
+    "vmax": 20,
+    "cap": 20
+  },
+  "uphill20": {
+    "from": 16,
+    "after2s": 10.34,
+    "lossPct": 35.4
+  },
+  "uphillHold": {
+    "minVs": 0.419
+  },
+  "camPitch": {
+    "p0": -0.035,
+    "pEnd": -0.231,
+    "t63": 0.083
+  },
+  "hammer": {
+    "period": 2.583,
+    "minR": -2.05,
+    "maxR": 2.05,
+    "half": 2.3
+  },
+  "hammerHits": [
+    {
+      "dvr": -4.59,
+      "vr": -4.59,
+      "vyUp": 0,
+      "vsAfter": 7.78,
+      "frozen": false
+    },
+    {
+      "dvr": -4.59,
+      "vr": -4.59,
+      "vyUp": 0,
+      "vsAfter": 7.78,
+      "frozen": false
+    },
+    {
+      "dvr": -4.59,
+      "vr": -4.59,
+      "vyUp": 0,
+      "vsAfter": 7.78,
+      "frozen": false
+    },
+    {
+      "dvr": -4.59,
+      "vr": -4.59,
+      "vyUp": 0,
+      "vsAfter": 7.71,
+      "frozen": false
+    },
+    {
+      "dvr": -4.6,
+      "vr": -4.6,
+      "vyUp": 0,
+      "vsAfter": 7.64,
+      "frozen": false
+    },
+    {
+      "dvr": -4.6,
+      "vr": -4.6,
+      "vyUp": 0,
+      "vsAfter": 7.78,
+      "frozen": false
+    },
+    {
+      "dvr": -4.59,
+      "vr": -4.59,
+      "vyUp": 0,
+      "vsAfter": 7.86,
+      "frozen": false
+    },
+    {
+      "dvr": -4.6,
+      "vr": -4.6,
+      "vyUp": 0,
+      "vsAfter": 7.7,
+      "frozen": false
+    }
+  ],
+  "hammerKnockOff": {
+    "hits": 8,
+    "fellAfterHit": 8
+  },
+  "rollball": {
+    "down": {
+      "diameter": 2,
+      "speedMedian": 6,
+      "hits": [
+        {
+          "dvr": -5.39,
+          "vr": -5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": -5.39,
+          "vr": -5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": -5.4,
+          "vr": -5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        }
+      ]
+    },
+    "across": {
+      "diameter": 2,
+      "speedMedian": 6,
+      "hits": [
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.39,
+          "vr": 5.39,
+          "vyUp": 0,
+          "vs": 13.66
+        },
+        {
+          "dvr": 5.4,
+          "vr": 5.4,
+          "vyUp": 0,
+          "vs": 13.58
+        }
+      ]
+    }
+  },
+  "jumpPad": {
+    "vy0": 10.32,
+    "airtime": 0.95,
+    "R2": 1,
+    "bounce": 0.03
+  },
+  "side": [
+    {
+      "dir": 1,
+      "disp03": 1.5
+    },
+    {
+      "dir": -1,
+      "disp03": -1.5
+    }
+  ],
+  "bars": {
+    "period": 2,
+    "carried": true,
+    "maxRelToBar": 0.042,
+    "carriedSpan": 3.2,
+    "fellWhenMissed": true
+  },
+  "rails": {
+    "width": 0.5,
+    "small": {
+      "frac": 0.03,
+      "nx": 0.206,
+      "hold": 0.15,
+      "fell": false
+    },
+    "big": {
+      "frac": 0.15,
+      "nx": 1,
+      "hold": 0.25,
+      "fell": true
+    },
+    "sweep": [
+      {
+        "frac": 0.02,
+        "nx": 0.109,
+        "hold": 0.2,
+        "fell": false
+      },
+      {
+        "frac": 0.04,
+        "nx": 0.304,
+        "hold": 0.2,
+        "fell": true
+      },
+      {
+        "frac": 0.06,
+        "nx": 0.5,
+        "hold": 0.2,
+        "fell": true
+      },
+      {
+        "frac": 0.08,
+        "nx": 0.695,
+        "hold": 0.2,
+        "fell": true
+      },
+      {
+        "frac": 0.1,
+        "nx": 0.891,
+        "hold": 0.2,
+        "fell": true
+      },
+      {
+        "frac": 0.12,
+        "nx": 1,
+        "hold": 0.2,
+        "fell": true
+      },
+      {
+        "frac": 0.15,
+        "nx": 1,
+        "hold": 0.2,
+        "fell": true
+      }
+    ]
+  },
+  "respawnStart": {
+    "cpIndex": -1,
+    "respawnSec": 2,
+    "respawnS": 0,
+    "respawnR": 0,
+    "speedAfter": 0,
+    "camDrop": 0
+  },
+  "respawnCP": {
+    "cpIndex": 0,
+    "respawnSec": 2,
+    "respawnS": 40,
+    "respawnR": 0,
+    "speedAfter": 0,
+    "camDrop": 0
+  },
+  "timestep": {
+    "hz30": [
+      46.291,
+      -0.36
+    ],
+    "hz60": [
+      46.291,
+      -0.36
+    ],
+    "hz120": [
+      46.291,
+      -0.36
+    ]
+  },
+  "camera": {
+    "maxFrameDeltaVel": 0.0107,
+    "maxStepPerFrame": 0.306
+  },
+  "levels": [
+    {
+      "L": 1,
+      "name": "First Roll",
+      "len": 288,
+      "turns": [
+        [
+          45,
+          11,
+          24
+        ],
+        [
+          -45,
+          11,
+          24
+        ],
+        [
+          -45,
+          11,
+          24
+        ],
+        [
+          45,
+          11,
+          24
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.14,
+        0.16,
+        -0.22,
+        0.14,
+        0.16,
+        -0.25,
+        0.14,
+        0.16,
+        -0.22,
+        0.14,
+        0.14,
+        -0.18
+      ],
+      "rails": [],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "candy"
+      ]
+    },
+    {
+      "L": 2,
+      "name": "Smash Bend",
+      "len": 284,
+      "turns": [
+        [
+          45,
+          10,
+          28
+        ],
+        [
+          -45,
+          10,
+          28
+        ],
+        [
+          -45,
+          10,
+          28
+        ],
+        [
+          45,
+          10,
+          28
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.14,
+        0.16,
+        -0.24,
+        0.14,
+        0.16,
+        -0.25,
+        0.14,
+        0.18,
+        -0.22,
+        0.14,
+        0.16,
+        -0.18
+      ],
+      "rails": [],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "candy"
+      ]
+    },
+    {
+      "L": 3,
+      "name": "Thin Rails",
+      "len": 319,
+      "turns": [
+        [
+          45,
+          10,
+          28
+        ],
+        [
+          -45,
+          10,
+          28
+        ],
+        [
+          12,
+          124.1,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.14,
+        0.14,
+        -0.14,
+        0.18,
+        -0.24,
+        0.14,
+        0.14,
+        -0.14,
+        0.16,
+        -0.24,
+        0.12
+      ],
+      "rails": [
+        0.5,
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "candy"
+      ]
+    },
+    {
+      "L": 4,
+      "name": "Slide Gate",
+      "len": 323,
+      "turns": [
+        [
+          45,
+          10,
+          28
+        ],
+        [
+          -45,
+          10,
+          28
+        ],
+        [
+          14,
+          106.4,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.16,
+        0.16,
+        0.14,
+        -0.22,
+        0.16,
+        0.14,
+        -0.25,
+        0.18,
+        0.14,
+        -0.14,
+        0.16,
+        -0.22
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "sliding",
+        "candy"
+      ]
+    },
+    {
+      "L": 5,
+      "name": "Hammer Time",
+      "len": 323,
+      "turns": [
+        [
+          45,
+          10,
+          30
+        ],
+        [
+          -45,
+          10,
+          30
+        ],
+        [
+          15,
+          99.3,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.16,
+        0.16,
+        0.14,
+        -0.22,
+        0.16,
+        0.14,
+        -0.25,
+        0.18,
+        0.14,
+        -0.14,
+        0.16,
+        -0.22
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "hammer",
+        "candy"
+      ]
+    },
+    {
+      "L": 6,
+      "name": "Pads & Gaps",
+      "len": 345,
+      "turns": [
+        [
+          45,
+          10,
+          30
+        ],
+        [
+          -45,
+          10,
+          30
+        ],
+        [
+          15,
+          99.3,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        0.16,
+        -0.12,
+        0.14,
+        0.2,
+        -0.25,
+        0.16,
+        0.16,
+        -0.12,
+        0.14,
+        -0.14,
+        0.16,
+        -0.2
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 3,
+      "types": [
+        "jump",
+        "speed",
+        "candy"
+      ]
+    },
+    {
+      "L": 7,
+      "name": "Side Step",
+      "len": 379,
+      "turns": [
+        [
+          -45,
+          10,
+          30
+        ],
+        [
+          45,
+          10,
+          30
+        ],
+        [
+          15,
+          99.3,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.14,
+        -0.14,
+        0.16,
+        0.14,
+        -0.24,
+        0.14,
+        -0.14,
+        0.16,
+        0.14,
+        0.14,
+        -0.14,
+        0.16,
+        -0.22
+      ],
+      "rails": [
+        1.35,
+        1.35,
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "candy",
+        "side"
+      ]
+    },
+    {
+      "L": 8,
+      "name": "Rolling Thunder",
+      "len": 363,
+      "turns": [
+        [
+          45,
+          10,
+          30
+        ],
+        [
+          -45,
+          10,
+          30
+        ],
+        [
+          17,
+          87.6,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.16,
+        0.16,
+        0.14,
+        -0.2,
+        0.18,
+        0.14,
+        -0.22,
+        0.16,
+        0.14,
+        -0.14,
+        0.14,
+        0.16,
+        -0.24
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "hammer",
+        "candy",
+        "rollball"
+      ]
+    },
+    {
+      "L": 9,
+      "name": "Big Bowl",
+      "len": 350,
+      "turns": [
+        [
+          45,
+          8.5,
+          35
+        ],
+        [
+          -45,
+          8.5,
+          35
+        ],
+        [
+          17,
+          87.6,
+          0
+        ],
+        [
+          -45,
+          8.5,
+          35
+        ],
+        [
+          45,
+          8.5,
+          35
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.18,
+        -0.25,
+        0.16,
+        0.14,
+        -0.22,
+        0.14,
+        -0.14,
+        0.16,
+        -0.25,
+        0.16,
+        0.14,
+        -0.22,
+        0.16,
+        -0.22
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 0,
+      "gaps": 0,
+      "types": [
+        "candy",
+        "hammer"
+      ]
+    },
+    {
+      "L": 10,
+      "name": "Sliding Bars",
+      "len": 431,
+      "turns": [
+        [
+          45,
+          10,
+          30
+        ],
+        [
+          -45,
+          10,
+          30
+        ],
+        [
+          17,
+          87.6,
+          0
+        ]
+      ],
+      "grades": [
+        0.14,
+        -0.18,
+        0.14,
+        -0.24,
+        0.16,
+        -0.18,
+        0.16,
+        -0.14,
+        0.16,
+        0.14,
+        -0.22,
+        0.18,
+        -0.14,
+        0.16,
+        0.14,
+        -0.14,
+        0.16,
+        -0.22
+      ],
+      "rails": [
+        0.5
+      ],
+      "bars": 3,
+      "gaps": 0,
+      "types": [
+        "bar",
+        "candy",
+        "hammer",
+        "rollball"
+      ]
+    }
+  ]
+}
