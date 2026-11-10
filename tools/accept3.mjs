@@ -66,10 +66,16 @@ window.__bot = function (level, seed, opts) {
       wobble *= 0.97;
       const err = (h.r + wobble - st.r);
       let nx = Math.max(-1, Math.min(1, err * 1.6 - st.vr * 0.12 + (rnd() * 2 - 1) * noise * 0.3));
-      let ny = h.throttle;
-      if (h.brakeTo != null && st.vs > h.brakeTo + 0.3) ny = -Math.min(1, (st.vs - h.brakeTo) / 2);
-      ny = Math.max(-1, Math.min(1, ny + (rnd() * 2 - 1) * noise * 0.2));
-      T.setDrag(nx, ny);
+      // Drive by swipes like a finger (trackball control): sideways finger travel sets the steer
+      // command, upward travel adds speed, downward travel brakes. Finger rate <= 1.5 short sides/s.
+      const C = T.getConfig(), sw = T.getSwipe();
+      const ux = Math.max(-0.025, Math.min(0.025, (nx * Math.exp(C.SWIPE_LAT_DECAY * dt) - sw.latCmd) / (C.SWIPE_LAT * 0.5)));
+      let want = h.throttle * C.MAX_SPEED;
+      if (h.brakeTo != null) want = Math.min(want, h.brakeTo);
+      let uy = (want - st.vs) / (C.SWIPE_FWD * 0.5);
+      if (uy < 0) uy = st.vs > want + 0.3 ? (want - st.vs) / (C.SWIPE_BRAKE * 0.5) * 0.5 : 0;
+      uy = Math.max(-0.025, Math.min(0.025, uy + (rnd() * 2 - 1) * noise * 0.004));
+      T.swipe(ux, uy, 1);
     }
     T.tick(dt); t += dt; maxSpeed = Math.max(maxSpeed, T.getState().speed || 0);
   }
@@ -160,7 +166,7 @@ if (want('spin')) {
 // ---------- 3. Drag-to-direction mapping (mouse + touch, real pointer events), on a straight and in a curve
 async function mapping(kind) {
   const o = await open(1180, 820, { touch: kind === 'touch', render: true }); const { page } = o;
-  await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 20; i++) T.tick(1/60); });
+  await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 40; i++) T.tick(1/60); }); // past the 0.4 s input grace
   const cx = 590, cy = 560; let cdp; if (kind === 'touch') cdp = await page.context().newCDPSession(page);
   const settle = () => page.evaluate(() => new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r))));
   const down = async (x, y) => { kind === 'mouse' ? (await page.mouse.move(x, y), await page.mouse.down()) : await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x, y, id: 0 }] }); await settle(); };
@@ -169,21 +175,24 @@ async function mapping(kind) {
   const tick = n => page.evaluate(n => { for (let i = 0; i < n; i++) window.__test.tick(1/60); }, n);
   const st = () => page.evaluate(() => { const T = window.__test; const s = T.getState(); const b = T.projectBall(); const c0 = T.worldAt(s.s, 0, 0); const c = T.projectPoint(c0.x, c0.y, c0.z); return { s, rel: b.sx - c.sx, d: T.getDrag() }; });
   const r = {};
-  await down(cx, cy); await move(cx, cy - 120); await tick(60);
-  const a = await st(); r.forward = { ny: a.d.ny, vs: r2(a.s.vs) };
-  await move(cx + 150, cy - 120); await tick(15); const b = await st(); r.right = { nx: b.d.nx, screenDx: r2(b.rel - a.rel), dr: r2(b.s.r - a.s.r) };
-  await move(cx - 150, cy - 120); await tick(15); const c = await st(); r.left = { nx: c.d.nx, screenDx: r2(c.rel - b.rel), dr: r2(c.s.r - b.s.r) };
-  await move(cx - 150, cy + 200); await tick(120); const d = await st(); r.pullBack = { ny: d.d.ny, vs: +d.s.vs.toFixed(3) };
+  // Trackball model: finger motion pushes the ball; a still finger adds nothing.
+  await down(cx, cy); await tick(2); const a0 = await st(); await move(cx, cy - 160); await tick(2);
+  const a = await st(); r.forward = { vsBefore: r2(a0.s.vs), vs: r2(a.s.vs) };
+  await tick(60); const still = await st(); r.stillCoasts = { from: r.forward.vs, after1s: r2(still.s.vs) };
+  await move(cx + 120, cy - 160); await tick(15); const b = await st(); r.right = { screenDx: r2(b.rel - still.rel), dr: r2(b.s.r - still.s.r) };
+  await move(cx - 120, cy - 160); await tick(15); const c = await st(); r.left = { screenDx: r2(c.rel - b.rel), dr: r2(c.s.r - b.s.r) };
+  const c0 = c.s.vs; await move(cx - 120, cy + 200); await tick(2); const d = await st(); r.pullBack = { from: r2(c0), vs: +d.s.vs.toFixed(3) };
   await up(); await tick(2); const g = await st(); r.release = { active: g.d.active, nx: g.d.nx, ny: g.d.ny };
-  // inside a curve: drag right still moves screen-right
+  // inside a curve: swipe right still moves screen-right
   const cs = await page.evaluate(() => { const T = window.__test; T.startLevel(2); const pc = T.getPieces().find(p => Math.abs(p.turn || 0) >= 45); T.placeBall(pc.s0 + pc.len * 0.4, 0, 9, 0); T.clearDrag(); for (let i = 0; i < 20; i++) T.tick(1/60); return pc.turn; });
-  const e0 = await st(); await down(cx, cy); await move(cx, cy - 80); await move(cx + 150, cy - 80); await tick(12); const e1 = await st(); await up();
+  const e0 = await st(); await down(cx, cy); await move(cx + 150, cy); await tick(12); const e1 = await st(); await up();
   r.curveRight = { turn: cs, dr: r2(e1.s.r - e0.s.r), screenDx: r2(e1.rel - e0.rel) };
-  check('input', `${kind}: drag up = forward`, r.forward.ny > 0.9 && r.forward.vs > 5, r.forward);
-  check('input', `${kind}: drag right = ball moves right on screen`, r.right.nx > 0.5 && r.right.screenDx > 15 && r.right.dr > 0, r.right);
-  check('input', `${kind}: drag left = ball moves left on screen`, r.left.nx < -0.5 && r.left.screenDx < -15 && r.left.dr < 0, r.left);
-  check('input', `${kind}: drag right inside a curve = screen right`, r.curveRight.dr > 0 && r.curveRight.screenDx > 10, r.curveRight);
-  check('input', `${kind}: pull back brakes, never reverses`, r.pullBack.ny < -0.5 && r.pullBack.vs >= -0.01 && r.pullBack.vs < 1, r.pullBack);
+  check('input', `${kind}: swipe up pushes the ball forward`, r.forward.vs > r.forward.vsBefore + 1.5, r.forward);
+  check('input', `${kind}: finger held still = no push, ball coasts (<=20%/s loss)`, r.stillCoasts.after1s <= r.stillCoasts.from + 0.05 && r.stillCoasts.after1s >= 0.8 * r.stillCoasts.from, r.stillCoasts);
+  check('input', `${kind}: swipe right = ball moves right on screen`, r.right.screenDx > 15 && r.right.dr > 0, r.right);
+  check('input', `${kind}: swipe left = ball moves left on screen`, r.left.screenDx < -15 && r.left.dr < 0, r.left);
+  check('input', `${kind}: swipe right inside a curve = screen right`, r.curveRight.dr > 0 && r.curveRight.screenDx > 10, r.curveRight);
+  check('input', `${kind}: swipe down brakes, never reverses`, r.pullBack.from > 1 && r.pullBack.vs >= -0.01 && r.pullBack.vs < 0.5 * r.pullBack.from, r.pullBack);
   check('input', `${kind}: release clears input`, !r.release.active && r.release.nx === 0 && r.release.ny === 0, r.release);
   check('input', `${kind}: no errors`, o.errors.length === 0, o.errors.slice(0, 2));
   await o.ctx.close();
@@ -212,7 +221,41 @@ async function steerParity() {
   check('input', 'same drag (5% of short side) moves the ball the same share of the screen at all 4 sizes (+-20%)', ok, { meanShareOfH: +mean.toFixed(4), out });
   gapRow('input', 'steering independent of viewport (+-20%)', out.map(x => `${x.size} ${x.movePx}px=${(x.shareOfH * 100).toFixed(1)}%H`).join(', '), ok);
 }
-if (want('input')) { await mapping('mouse'); await mapping('touch'); await steerParity(); }
+// Swipe control (Eric, Nov 9): quick upward flicks build speed; momentum carries; downhill adds speed.
+async function flicks() {
+  const out = [];
+  for (const [w, h] of SIZES) {
+    const o = await open(w, h, { touch: true }); const { page } = o;
+    const cdp = await page.context().newCDPSession(page);
+    const touch = (type, x, y) => cdp.send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 0 }] });
+    const tick = n => page.evaluate(n => { for (let i = 0; i < n; i++) window.__test.tick(1/60); }, n);
+    const vs = () => page.evaluate(() => window.__test.getState().vs);
+    await page.evaluate(() => { const T = window.__test; T.loadCustomLevel({ name: 'flat', pieces: [{ len: 500, guard: 'both' }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] }); T.clearDrag(); for (let i = 0; i < 40; i++) T.tick(1/60); });
+    const m = Math.min(w, h), cx = Math.round(w / 2), cy = Math.round(h * 0.8), L = Math.round(0.25 * m);
+    // 4 quick flicks: 25% of the short side upward in 3 moves (~50 ms), lift, ~0.4 s apart
+    let t = 0, t80 = null; const trace = [];
+    for (let k = 0; k < 4; k++) {
+      await touch('touchStart', cx, cy);
+      for (let q = 1; q <= 3; q++) { await touch('touchMove', cx, cy - Math.round(L * q / 3)); await tick(1); t += 1/60; }
+      await touch('touchEnd'); await tick(1); t += 1/60;
+      for (let z = 0; z < 20; z++) { const v = await vs(); if (t80 === null && v >= 0.8 * 16) t80 = +t.toFixed(2); await tick(1); t += 1/60; }
+      trace.push(r2(await vs()));
+    }
+    const v0 = await vs(); await tick(60); const v1 = await vs();
+    out.push({ size: `${w}x${h}`, flickPx: L, afterEachFlick: trace, t80, coastFrom: r2(v0), after1s: r2(v1), lossPct: +(100 * (1 - v1 / v0)).toFixed(1), errors: o.errors.length });
+    await o.ctx.close();
+  }
+  const okF = out.every(x => x.t80 !== null && x.t80 <= 2 && x.errors === 0);
+  const okC = out.every(x => x.lossPct >= 0 && x.lossPct <= 20);
+  check('input', '4 quick upward flicks reach >=80% of top speed within 2 s at all 4 sizes', okF, out.map(x => ({ size: x.size, flickPx: x.flickPx, v: x.afterEachFlick, t80: x.t80 })));
+  check('input', 'momentum: <=20% speed loss per second coasting on flat', okC, out.map(x => ({ size: x.size, from: x.coastFrom, after1s: x.after1s, lossPct: x.lossPct })));
+  gapRow('input', 'swipe: 4 flicks -> 80% top speed <=2 s', out.map(x => `${x.size} ${x.t80}s`).join(', '), okF);
+  gapRow('input', 'coast loss <=20%/s (flat)', out.map(x => `${x.lossPct}%`).join(', '), okC);
+  const o = await open(1024, 768); const dh = await o.page.evaluate(() => { const T = window.__test; T.loadCustomLevel({ name: 'slope', pieces: [{ len: 20 }, { len: 120, grade: -0.15 }, { len: 40 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] }); T.placeBall(25, 0, 8, 0); T.clearDrag(); for (let i = 0; i < 40; i++) T.tick(1/60); const v0 = T.getState().vs; for (let i = 0; i < 60; i++) T.tick(1/60); return { v0: +v0.toFixed(2), after1s: +T.getState().vs.toFixed(2) }; });
+  await o.ctx.close();
+  check('input', 'coasting downhill (-15%) gains speed', dh.after1s > dh.v0 + 1, dh);
+}
+if (want('input')) { await flicks(); await mapping('mouse'); await mapping('touch'); await steerParity(); }
 
 // ---------- 4. Base feel (slice-2 numbers must hold) + every gap item measured on custom test levels
 if (want('physics')) {

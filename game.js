@@ -8,11 +8,18 @@
     BALL_R: 0.45, GRAVITY: 22, MAX_SPEED: TOP_SPEED,
     ACCEL: TOP_SPEED, // 0 -> 90% of top speed in ~1.4 s at any top speed
     BRAKE: Math.round(TOP_SPEED * 1.3125), /* 9cea556: 21 at 16 m/s */ // full pull-back stops from top speed in ~0.65 s
-    ROLL_DRAG: 0.15, COAST_DRAG: 0.55, DOWNHILL_CAP: TOP_SPEED + 4,
+    ROLL_DRAG: 0.15, COAST_DRAG: 0.18, /* momentum carries between swipes: ~16%/s loss on flat (was 0.55 = 42%/s) */ DOWNHILL_CAP: TOP_SPEED + 4,
     PAD_SPEED: TOP_SPEED + 5, PAD_DURATION: 1.2, PAD_VY: 10.5,
     FAST_SPEED: 10, // FOV widening + edge streaks from here (VISUAL_GAPS 12)
     LAT_MAX: TOP_SPEED * 8.5 / 16, /* 9cea556: ~0.53x cruise */ LAT_RESPONSE: 14, AIR_RESPONSE: 2.5,
     SLOPE_G: 10, LAT_G: 22, DOWNHILL_DRAG: 0.05, UPHILL_DRIVE_CUT: 0.85, KNOCK_T: 0.6, BANK_DAMP: 4, RESPAWN_S: 2, INPUT_GRACE: 0.4,
+    // Swipe (trackball) control, Eric Nov 9: finger motion pushes the ball in the swipe direction.
+    // Distances are in shorter-screen-side units so iPad and iPhone feel the same.
+    SWIPE_FWD: 18,      // m/s added per short side of upward swipe (x speed factor)
+    SWIPE_BRAKE: 24,    // m/s removed per short side of downward swipe (never reverses)
+    SWIPE_LAT: 11,      // steer command per short side of sideways swipe
+    SWIPE_LAT_DECAY: 8, // 1/s: sideways push fades once the finger stops
+    SWIPE_FAST: 2,      // short sides per second that counts as a full-speed flick
     SIDE_T: 0.25, FIXED_DT: 1 / 120, CAMERA_BEHIND: 8.5,
     CAMERA_ABOVE: 2.3, LOOK_AHEAD: 10, LOOK_HEIGHT: 2.1, CAMERA_LATERAL: 0.6, FOV: 60, FAST_FOV: 64,
     CAMERA_TAU: 0.11, /* 9cea556: cruise lead ~1.8 m at 16 m/s */ FOV_TAU: 0.25, GUARD_HEIGHT: 0.35,
@@ -35,6 +42,8 @@
     ball: { x: 0, y: C.BALL_R, z: 0, vx: 0, vy: 0, vz: 0 }
   };
   const drag = { nx: 0, ny: 0, active: false };
+  // Pending swipe pushes (short-side units, speed-weighted), consumed by the next physics step.
+  const swipe = { fwd: 0, lat: 0, latCmd: 0, lastT: 0 };
   const keys = new Set();
   const origin = { x: 0, y: 0 };
   let lastPX = 0, lastPY = 0;
@@ -945,13 +954,20 @@
 
   function clearInput() {
     const old = pointer; pointer = null; keys.clear();
-    drag.nx = drag.ny = 0; drag.active = false;
+    drag.nx = drag.ny = 0; drag.active = false; swipe.fwd = swipe.lat = 0;
     if (old !== null && renderer && renderer.domElement.hasPointerCapture(old))
       renderer.domElement.releasePointerCapture(old);
   }
   function recenterInput() {
     origin.x = lastPX; origin.y = lastPY;
-    drag.nx = drag.ny = 0; keys.clear();
+    drag.nx = drag.ny = 0; keys.clear(); swipe.fwd = swipe.lat = swipe.latCmd = 0;
+  }
+  // ux/uy: finger travel in short-side units (up = +uy), dt: seconds since the previous sample.
+  // Faster swipes push harder (x0.5 slow drag .. x1.25 flick).
+  function addSwipe(ux, uy, dt) {
+    const speed = Math.hypot(ux, uy) / Math.max(dt, 1e-3);
+    const f = clamp(0.5 + 0.75 * speed / C.SWIPE_FAST, 0.5, 1.25);
+    swipe.fwd += uy * f; swipe.lat += ux * f;
   }
   function deadzone(v) { return Math.abs(v) <= 0.08 ? 0 : Math.sign(v) * (Math.abs(v) - 0.08) / 0.92; }
   function controls() {
@@ -1166,6 +1182,12 @@
     let grounded = state.grounded && t0.over &&
       Math.abs(state.ball.y - C.BALL_R - t0.y) < 0.065;
     const input = controls();
+    if (state.simTime < grace) swipe.fwd = swipe.lat = 0;
+    swipe.latCmd = clamp(swipe.latCmd + swipe.lat * C.SWIPE_LAT, -1.5, 1.5) * Math.exp(-C.SWIPE_LAT_DECAY * dt);
+    input.nx = clamp(input.nx + swipe.latCmd, -1, 1);
+    if (swipe.fwd > 0 && state.vs < C.MAX_SPEED) state.vs = Math.min(C.MAX_SPEED, state.vs + swipe.fwd * C.SWIPE_FWD);
+    else if (swipe.fwd < 0) state.vs = Math.max(0, state.vs + swipe.fwd * C.SWIPE_BRAKE);
+    swipe.fwd = swipe.lat = 0;
     let carry = attached ? attached.vr : 0;
     if (grounded && t0.onBar >= 0) {
       const bar = obstacles.find(o => o.id === t0.onBar);
@@ -1422,24 +1444,16 @@
       clearInput();
       try { el.setPointerCapture(e.pointerId); } catch (_) { return; }
       pointer = e.pointerId;
-      origin.x = lastPX = e.clientX; origin.y = lastPY = e.clientY; drag.active = true;
+      origin.x = lastPX = e.clientX; origin.y = lastPY = e.clientY; drag.active = true; swipe.lastT = e.timeStamp;
     }, { passive: false });
     el.addEventListener('pointermove', e => {
       if (e.pointerId !== pointer) return;
-      lastPX = e.clientX; lastPY = e.clientY;
       e.preventDefault();
-      // Joystick radius is a fixed share of the shorter screen side (no px floor/cap), so the
-      // same drag (as a share of the screen) gives the same steer at every viewport (844x390 included).
-      const radius = 0.16 * Math.max(1, Math.min(width, height));
-      let dx = e.clientX - origin.x, dy = e.clientY - origin.y;
-      const length = Math.hypot(dx, dy);
-      if (length > radius) {
-        origin.x = e.clientX - dx * radius / length;
-        origin.y = e.clientY - dy * radius / length;
-        dx = e.clientX - origin.x; dy = e.clientY - origin.y;
-      }
-      drag.nx = deadzone(clamp(dx / radius, -1, 1));
-      drag.ny = deadzone(clamp(-dy / radius, -1, 1));
+      // Trackball: each finger movement pushes the ball by the movement itself (no joystick, no
+      // auto-thrust). A finger held still adds nothing and the ball coasts.
+      const m = Math.max(1, Math.min(width, height));
+      addSwipe((e.clientX - lastPX) / m, -(e.clientY - lastPY) / m, Math.max(1, e.timeStamp - swipe.lastT) / 1000);
+      lastPX = e.clientX; lastPY = e.clientY; swipe.lastT = e.timeStamp;
     }, { passive: false });
     ['pointerup', 'pointercancel', 'lostpointercapture'].forEach(name =>
       el.addEventListener(name, e => { if (pointer === e.pointerId) clearInput(); }));
@@ -1540,6 +1554,9 @@
       drag.ny = deadzone(clamp(Number(ny) || 0, -1, 1)); drag.active = true;
     },
     clearDrag: clearInput, getDrag: () => ({ ...drag }), startLevel,
+    // Same path as a finger: ux/uy in short-side units (up = +uy) over dt seconds.
+    swipe(ux, uy, dt = 1 / 60) { addSwipe(Number(ux) || 0, Number(uy) || 0, dt); },
+    getSwipe: () => ({ ...swipe }),
     getLevelCount: () => 10,
     getLevelName: n => names[clamp(Math.floor(n) - 1, 0, 9)],
     getTrackLength: () => finishS, getTrackEnd: () => finishS,
