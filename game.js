@@ -44,6 +44,7 @@
   let grace = 0, boost = -1, sideTime = 0, sideDir = 0, camYaw = 0, knockUntil = -1;
   let width = 1, height = 1, serial = 0, rng = 12345;
   let unsupportedSeat = null;
+  let surgeUntil = -1, fovKick = 0;
   const look = vec(), frozen = vec(), angular = vec(), axis = vec(), temp = vec();
   const quat = new THREE.Quaternion();
   const up = new THREE.Vector3(0, 1, 0);
@@ -573,9 +574,48 @@
       quad(name, worldAt(s0, r0, lift), worldAt(s0, r1, lift),
         worldAt(s1, r1, lift), worldAt(s1, r0, lift));
     }
+    function curb(p, edge) {
+      const start = p.s0 + 1e-6, end = p.s1 - 1e-6;
+      function ring(s) {
+        const center = worldAt(s, edge, 0.2);
+        const a = worldAt(Math.max(start, s - 0.01), edge, 0.2);
+        const b = worldAt(Math.min(end, s + 0.01), edge, 0.2);
+        const tangent = new THREE.Vector3(b.x - a.x, b.y - a.y, b.z - a.z).normalize();
+        const lateral = new THREE.Vector3().crossVectors(up, tangent).normalize();
+        const normal = new THREE.Vector3().crossVectors(tangent, lateral).normalize();
+        return Array.from({ length: 12 }, (_, j) => {
+          const angle = j * Math.PI / 6;
+          return new THREE.Vector3(center.x, center.y, center.z)
+            .addScaledVector(lateral, 0.16 * Math.cos(angle))
+            .addScaledVector(normal, 0.16 * Math.sin(angle));
+        });
+      }
+      const count = Math.ceil(p.len / 0.25);
+      let distance = 0, previous = ring(start);
+      for (let i = 0; i < count; i++) {
+        const a = mix(start, end, i / count), b = mix(start, end, (i + 1) / count);
+        const wa = worldAt(a, edge, 0.2), wb = worldAt(b, edge, 0.2);
+        const length = Math.hypot(wb.x - wa.x, wb.y - wa.y, wb.z - wa.z);
+        let used = 0;
+        while (used < length - 1e-9) {
+          const segment = Math.floor((distance + 1e-8) / 1.5);
+          const step = Math.min(length - used, (segment + 1) * 1.5 - distance);
+          used += step;
+          const next = ring(mix(a, b, used / length));
+          const name = segment % 2 ? 'curb-mint' : 'curb-navy';
+          for (let j = 0; j < 12; j++)
+            quad(name, previous[j], next[j], next[(j + 1) % 12], previous[(j + 1) % 12]);
+          previous = next; distance += step;
+        }
+      }
+    }
     for (const p of pieces) {
       if (p.kind === 'gap' || p.kind === 'bars') continue;
       const centers = p.kind === 'rails' ? (p.rails || [0]) : [0];
+      if (p.kind !== 'rails') {
+        if (p.guard === 'both' || p.guard === 'left') curb(p, -p.width / 2);
+        if (p.guard === 'both' || p.guard === 'right') curb(p, p.width / 2);
+      }
       const count = Math.ceil(p.len / (p.turn ? 0.25 : 0.5));
       for (let i = 0; i < count; i++) {
         const a = p.s0 + p.len * i / count, b = p.s0 + p.len * (i + 1) / count;
@@ -596,12 +636,7 @@
                 [0.15, 0.2, 'navy'], [0.2, 0.35, 'mint']];
             for (const [l, h, material] of bands)
               strip(material, aa, bb, edge - sign * l, edge - sign * h, 0.012);
-            const side = sign > 0 ? 'right' : 'left';
-            if (p.kind !== 'rails' && (p.guard === 'both' || p.guard === side)) {
-              quad('navy', worldAt(aa, edge, 0), worldAt(bb, edge, 0),
-                worldAt(bb, edge, 0.35), worldAt(aa, edge, 0.35));
-              strip('mint', aa, bb, edge - 0.055, edge + 0.055, 0.35);
-            }
+
           }
           if (Math.floor(a / 4) !== Math.floor(b / 4))
             strip('seam', Math.max(aa, b - 0.045), bb, lo + 0.36, hi - 0.36, 0.016);
@@ -612,7 +647,7 @@
       const g = new THREE.BufferGeometry();
       g.setAttribute('position', new THREE.Float32BufferAttribute(batches[name], 3));
       g.computeVertexNormals();
-      const material = mats[name]; material.side = THREE.DoubleSide;
+      const material = mats[name.replace('curb-', '')]; material.side = THREE.DoubleSide;
       const mesh = new THREE.Mesh(g, material); mesh.name = 'track-' + name; root.add(mesh);
     }
   }
@@ -625,8 +660,16 @@
     ctx.moveTo(0, 0); ctx.lineTo(0, 128); ctx.stroke();
     const texture = srgb(new THREE.CanvasTexture(c));
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping; texture.repeat.set(300, 300);
-    const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200),
-      mat(0xFFFFFF, { map: texture }));
+    // Preserve the ground's softer, longer fog independently of the track.
+    const groundMaterial = mat(0xFFFFFF, { map: texture });
+    groundMaterial.onBeforeCompile = shader => {
+      shader.uniforms.groundFogColor = { value: new THREE.Color(0x2A145C) };
+      shader.fragmentShader = 'uniform vec3 groundFogColor;\n' + shader.fragmentShader.replace(
+        '#include <fog_fragment>', THREE.ShaderChunk.fog_fragment
+          .replace(/\bfogNear\b/g, '45.0').replace(/\bfogFar\b/g, '160.0')
+          .replace(/\bfogColor\b/g, 'groundFogColor'));
+    };
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(1200, 1200), groundMaterial);
     ground.name = 'ground'; ground.rotation.x = -Math.PI / 2; ground.position.y = lowest - 25; root.add(ground);
   }
 
@@ -1013,6 +1056,7 @@
           state.vy = C.PAD_VY; state.grounded = false; state.ball.y += 0.002;
         } else if (o.type === 'speed') {
           state.vs = Math.max(state.vs, C.PAD_SPEED); boost = state.simTime + C.PAD_DURATION;
+          surgeUntil = state.simTime + 1.0;
         } else {
           sideTime = C.SIDE_T; sideDir = o.dir || 1; state.vr = sideDir * 1.5 / C.SIDE_T;
         }
@@ -1292,6 +1336,7 @@
     camLead = Math.max(0, state.vs) * C.CAMERA_TAU;
     camera.position.copy(cameraSeat());
     look.copy(cameraAim()); camera.fov = C.FOV;
+    surgeUntil = -1; fovKick = 0;
     camera.lookAt(look); camera.updateProjectionMatrix(); camera.updateMatrixWorld(true);
     camYaw = frameAt(state.s).a;
     frozen.copy(camera.position); placePlanet();
@@ -1311,12 +1356,16 @@
     }
     camera.lookAt(look);
     const fast = state.status === 'playing' && state.vs >= C.FAST_SPEED;
+    // Smooth the normal FOV independently, then overlay the one-second pad kick.
+    camera.fov -= fovKick;
     camera.fov += ((fast ? C.FAST_FOV : C.FOV) - camera.fov) * damp(dt, C.FOV_TAU);
+    fovKick = 6 * clamp(surgeUntil - state.simTime, 0, 1);
+    camera.fov += fovKick;
     camera.updateProjectionMatrix(); camera.updateMatrixWorld(true); placePlanet();
     hills.position.set(camera.position.x, camera.position.y, camera.position.z);
     keyLight.position.set(state.ball.x + 8, state.ball.y + 16, state.ball.z - 3);
     keyLight.target.position.set(state.ball.x, state.ball.y, state.ball.z);
-    const streak = fast ? '1' : '0';
+    const streak = fast || fovKick > 0 ? '1' : '0';
     if (streak !== lastStreak) {
       lastStreak = streak;
       document.querySelectorAll('.left-streak,.right-streak').forEach(el => { el.style.opacity = streak; });
@@ -1329,6 +1378,9 @@
   }
   function draw(dt) {
     ball.position.set(state.ball.x, state.ball.y, state.ball.z);
+    coins.forEach(c => {
+      c.mesh.visible = !c.collected && c.mesh.position.distanceToSquared(ball.position) <= 70 * 70;
+    });
     updateCamera(dt); hud();
     if (test.render) renderer.render(scene, camera);
   }
@@ -1552,7 +1604,8 @@
   window.__test = test;
 
   function init() {
-    scene = new THREE.Scene(); scene.fog = new THREE.Fog(0x2A145C, 45, 160);
+    // Warm violet-orange sampled from the sky just below its horizon band.
+    scene = new THREE.Scene(); scene.fog = new THREE.Fog(0xEFA771, 60, 110);
     camera = new THREE.PerspectiveCamera(C.FOV, 1, 0.1, 450); scene.add(camera);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
     renderer.domElement.addEventListener('webglcontextlost', e => {

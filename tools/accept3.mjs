@@ -432,7 +432,7 @@ if (want('look')) {
   // 6a framing at 4 sizes: horizon 45-50%, near track 35-45% width at phone landscape (the video's aspect)
   for (const [w, h] of SIZES) {
     const o = await open(w, h, { render: true }); const { page } = o;
-    const f = await page.evaluate(() => { const T = window.__test; T.startLevel(1); for (let i = 0; i < 40; i++) T.tick(1/60);
+    const f = await page.evaluate(() => { const T = window.__test; /* framing is specified on flat track; slopes pitch the camera by design */ T.loadCustomLevel({ name: 'flat', pieces: [{ len: 400 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] }); for (let i = 0; i < 40; i++) T.tick(1/60);
       const m = () => ({ hz: +T.getHorizon().toFixed(3), track: +(T.getNearTrackWidth() || { frac: 0 }).frac.toFixed(3), fov: +T.getCamera().fov.toFixed(1) });
       const rest = m(); T.setDrag(0, 1); for (let i = 0; i < 180; i++) T.tick(1/60); const cruise = m(); T.clearDrag(); return { rest, cruise }; });
     const hzOk = [f.rest, f.cruise].every(q => q.hz >= 0.45 && q.hz <= 0.5);
@@ -519,7 +519,7 @@ if (want('look')) {
   const tgt = [0xFF, 0xD2, 0x3F], dev = Math.max(...px.med.map((v, i) => Math.abs(v - tgt[i]) / 255));
   L('coin face', 'median pixel within 6% of #FFD23F at 1180x820', dev <= 0.06, { median: '#' + px.med.map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase(), maxDev: +dev.toFixed(3), sample: px });
   // UI + speed feel
-  const ui = await page.evaluate(() => { const T = window.__test; T.startLevel(1); T.clearDrag(); for (let i = 0; i < 10; i++) T.tick(1/60);
+  const ui = await page.evaluate(() => { const T = window.__test; T.loadCustomLevel({ name: 'flat', pieces: [{ len: 400 }], obstacles: [], checkpoints: [], hints: [{ s: 0, r: 0, throttle: 1 }] }); T.clearDrag(); for (let i = 0; i < 10; i++) T.tick(1/60);
     const rect = id => document.getElementById(id).getBoundingClientRect(); const pb = rect('progress-container'), lt = rect('level-title');
     const streak = () => +getComputedStyle(document.querySelector('.left-streak')).opacity;
     const slow = { fov: T.getCamera().fov, streak: document.querySelector('.left-streak').style.opacity || '0' };
