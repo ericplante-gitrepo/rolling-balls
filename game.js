@@ -1049,7 +1049,7 @@
     const fast = state.status === 'playing' && state.vs >= C.FAST_SPEED;
     camera.fov += ((fast ? C.FAST_FOV : C.FOV) - camera.fov) * damp(dt, C.FOV_TAU);
     camera.updateProjectionMatrix(); camera.updateMatrixWorld(true); placePlanet();
-    hills.position.set(camera.position.x, camera.position.y - 12, camera.position.z);
+    hills.position.set(camera.position.x, camera.position.y, camera.position.z);
     keyLight.position.set(state.ball.x + 8, state.ball.y + 16, state.ball.z - 3);
     keyLight.target.position.set(state.ball.x, state.ball.y, state.ball.z);
     const streak = fast ? '1' : '0';
@@ -1159,16 +1159,16 @@
     hg.addColorStop(1, 'rgba(255,255,255,0)'); hctx.fillStyle = hg; hctx.fillRect(0, 0, 1, 128);
     const fade = new THREE.CanvasTexture(hc);
     for (let layer = 0; layer < 2; layer++) {
-      const positions = [], uv = [], count = 96, radius = 160 + layer * 30;
+      const positions = [], uv = [], count = 96, radius = 260 + layer * 40; /* far silhouettes only: the track floats over the void (review Nov 9) */
       for (let i = 0; i < count; i++) {
         const a = i / count * Math.PI * 2, b = (i + 1) / count * Math.PI * 2;
-        const ya = 6 + 5 * Math.sin(i * 0.8 + layer) + 2 * Math.cos(i * 1.7);
-        const yb = 6 + 5 * Math.sin((i + 1) * 0.8 + layer) + 2 * Math.cos((i + 1) * 1.7);
+        const ya = 9 + 6 * Math.sin(i * 0.8 + layer) + 3 * Math.cos(i * 1.7);
+        const yb = 9 + 6 * Math.sin((i + 1) * 0.8 + layer) + 3 * Math.cos((i + 1) * 1.7);
         const vertices = [
-          [Math.sin(a) * radius, -22, Math.cos(a) * radius, 0, 0],
-          [Math.sin(b) * radius, -22, Math.cos(b) * radius, 1, 0],
+          [Math.sin(a) * radius, -4, Math.cos(a) * radius, 0, 0],
+          [Math.sin(b) * radius, -4, Math.cos(b) * radius, 1, 0],
           [Math.sin(b) * radius, yb, Math.cos(b) * radius, 1, 1],
-          [Math.sin(a) * radius, -22, Math.cos(a) * radius, 0, 0],
+          [Math.sin(a) * radius, -4, Math.cos(a) * radius, 0, 0],
           [Math.sin(b) * radius, yb, Math.cos(b) * radius, 1, 1],
           [Math.sin(a) * radius, ya, Math.cos(a) * radius, 0, 1]
         ];
