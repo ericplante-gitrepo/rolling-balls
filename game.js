@@ -37,6 +37,7 @@
   const drag = { nx: 0, ny: 0, active: false };
   const keys = new Set();
   const origin = { x: 0, y: 0 };
+  let lastPX = 0, lastPY = 0;
   let lastStreak = '', pointer = null, scene, camera, renderer, root, ball, planet, hills, keyLight;
   let pieces = [], obstacles = [], checkpoints = [], coins = [], debris = [], hints = [];
   let finishS = 150, lowest = 0, accumulator = 0, lastFrame = null;
@@ -101,7 +102,7 @@
   }
   function bankAt(f, r) {
     const p = f.p;
-    if (!p.turn || !p.bank) return { y: 0, slope: 0, bank: 0 };
+    if (!p.turn || !p.bank) return { y: 0, slope: 0, bank: 0, fade: 1 };
     const fade = ss(f.u / Math.min(4, p.len / 2)) *
       ss((p.len - f.u) / Math.min(4, p.len / 2));
     const B = rad(p.bank) * fade, sign = Math.sign(p.turn), half = p.width / 2;
@@ -111,13 +112,13 @@
     // Bowl: slope angle B*(0.55 + 0.45*q) for outward offset q (m): flat-ish inside, steep outside,
     // so a no-steer ball settles 0.5-1.5 m up the outer side at 10-12 m/s.
     const a = B * 0.55, b = B * 0.45;
-    if (Math.abs(b) < 1e-8) return { y: 0, slope: 0, bank: 0 };
+    if (Math.abs(b) < 1e-8) return { y: 0, slope: 0, bank: 0, fade: 1 };
     const rawPhi = a + b * q;
     const phi = clamp(rawPhi, -1.25, 1.25);
     const qClamp = (phi - a) / b;
     const y = (Math.log(Math.cos(a)) - Math.log(Math.cos(phi))) / b +
       (q - qClamp) * Math.tan(phi);
-    return { y, slope: -sign * Math.tan(phi), bank: p.bank * fade };
+    return { y, slope: -sign * Math.tan(phi), bank: p.bank * fade, fade };
   }
   function barMotion(o, time) {
     const a = time * Math.PI * 2 / o.period + o.phase;
@@ -147,10 +148,10 @@
       }
     }
     return {
-      y: f.y + b.y, yc: f.y, grade: f.grade, bank: b.bank,
+      y: f.y + b.y, yc: f.y, grade: f.grade, bank: b.bank, fade: b.fade,
       surfaceSlopeLat: b.slope, heading: f.a, kappa: p.k,
       half, center, over: deck && Math.abs(r - center) <= half &&
-        s >= -8 && s <= pieces[pieces.length - 1].s1 + 8,
+        s >= -C.BALL_R && s <= pieces[pieces.length - 1].s1 + C.BALL_R,
       guard: p.kind === 'rails' || p.kind === 'bars' || p.kind === 'gap' ? 'none' : p.guard,
       kind: p.kind, piece: p, pieceIndex: p.index, onBar
     };
@@ -166,9 +167,10 @@
     o.rotation.y = frameAt(s).a;
   }
   function surfaceRate(s, r, vs, vr) {
-    const e = 0.015;
-    return (sampleTrack(s + e, r).y - sampleTrack(s - e, r).y) / (2 * e) * vs +
-      sampleTrack(s, r).surfaceSlopeLat * vr;
+    const e = 0.015, t = sampleTrack(s, r);
+    const metric = Math.max(0.3, 1 + t.kappa * r);
+    return (sampleTrack(s + e, r).y - sampleTrack(s - e, r).y) / (2 * e) * vs / metric +
+      t.surfaceSlopeLat * vr;
   }
 
   function levelDef(n) {
@@ -490,6 +492,7 @@
     gs.forEach(g => g.dispose()); ts.forEach(t => t.dispose()); scene.remove(root);
   }
   function build(def, number) {
+    state.simTime = 0;
     clearInput(); disposeRoot();
     root = new THREE.Group(); scene.add(root);
     mats = {
@@ -667,7 +670,7 @@
       }
       if (o.type === 'side') {
         const plate = box(0.12, 1.1, 1.4, mats.mint);
-        setObject(plate, o.s, (o.dir || 1) * sampleTrack(o.s, 0).half, 0.55);
+        setObject(plate, o.s, -(o.dir || 1) * sampleTrack(o.s, 0).half, 0.55);
       }
     } else if (o.type === 'candy') {
       o.w = o.h = o.d = 0.5;
@@ -721,7 +724,11 @@
         o.r = m.r; o.vr = m.vr; o.s = o.s0; o.vs = 0;
       } else {
         const length = Math.max(1, o.s1 - o.s0);
-        o.s = o.s1 - ((state.simTime * o.speed + o.phase) % length);
+        const u = (state.simTime * o.speed + o.phase) % length;
+        o.s = o.s1 - u;
+        const k = ss(Math.min(u, length - u) / 1.5);
+        o.mesh.scale.setScalar(Math.max(0.01, k));
+        o.ghost = k < 0.9;
         o.vs = -o.speed; o.r = o.baseR;
       }
       lift = o.diameter / 2;
@@ -893,6 +900,10 @@
     if (old !== null && renderer && renderer.domElement.hasPointerCapture(old))
       renderer.domElement.releasePointerCapture(old);
   }
+  function recenterInput() {
+    origin.x = lastPX; origin.y = lastPY;
+    drag.nx = drag.ny = 0; keys.clear();
+  }
   function deadzone(v) { return Math.abs(v) <= 0.08 ? 0 : Math.sign(v) * (Math.abs(v) - 0.08) / 0.92; }
   function controls() {
     const has = (...k) => k.some(v => keys.has(v)) ? 1 : 0;
@@ -922,7 +933,7 @@
     unsupportedSeat = null;
     boost = -1; sideTime = 0; knockUntil = -1;
     obstacles.forEach(o => { o.used = false; o.cooldown = -1; });
-    placeBall(s, r); clearInput(); grace = state.simTime + C.INPUT_GRACE;
+    placeBall(s, r); recenterInput(); grace = state.simTime + C.INPUT_GRACE;
   }
   function beginFall() {
     if (state.status !== 'playing') return;
@@ -982,7 +993,7 @@
 
   function collide() {
     for (const o of obstacles) {
-      if (o.dead || o.type === 'bar') continue;
+      if (o.dead || o.ghost || o.type === 'bar') continue;
       const ds = state.s - o.s, dr = state.r - o.r;
       const isPad = ['jump', 'speed', 'side'].includes(o.type);
       if (isPad && Math.abs(ds) > 2) o.used = false;
@@ -1027,10 +1038,11 @@
       if (o.type === 'hammer' || o.type === 'rollball') {
         if (state.simTime < o.cooldown) continue;
         o.cooldown = state.simTime + 0.35;
-        const direction = o.type === 'hammer'
-          ? (Math.abs(o.vr) > 0.1 ? Math.sign(o.vr) : Math.sign(dr) || 1)
-          : Math.sign(dr) || (o.id % 2 ? 1 : -1);
-        state.vr = direction * clamp(Math.abs(o.vr || o.speed) * 0.9, 4.6, 7.5);
+        const side = o.type === 'hammer'
+          ? (Math.sign(lr) || Math.sign(o.vr) || 1)
+          : (Math.sign(dr) || (o.id % 2 ? 1 : -1));
+        const leading = o.type !== 'hammer' || Math.sign(o.vr) === side;
+        state.vr = side * (leading ? clamp(Math.abs(o.vr || o.speed) * 0.9, 4.6, 7.5) : 2);
         knockUntil = state.simTime + C.KNOCK_T; // steering can't cancel a knock straight away
         state.vs *= 0.85;
         state.vy = clamp(state.vy, -Infinity, 2);
@@ -1039,15 +1051,23 @@
         const extent = o.type === 'rollball'
           ? Math.sqrt(Math.max(0, (C.BALL_R + o.diameter / 2) ** 2 - ds * ds - dy * dy))
           : o.w / 2 + C.BALL_R;
-        state.r = o.r + direction * (extent + 0.015);
+        state.r = o.r + side * (extent + 0.015);
       } else {
         const pr = o.w / 2 + C.BALL_R - Math.abs(dr);
         const ps = o.d / 2 + C.BALL_R - Math.abs(ds);
         if (pr < ps) {
-          const sign = Math.sign(dr) || 1;
-          state.r = o.r + sign * (o.w / 2 + C.BALL_R + 0.005);
-          if ((state.vr - o.vr) * sign < 0)
-            state.vr = o.vr - 0.3 * (state.vr - o.vr);
+          const sign = Math.sign(dr) || 1, t = sampleTrack(state.s, state.r);
+          const target = o.r + sign * (o.w / 2 + C.BALL_R + 0.005);
+          const guarded = t.guard === 'both' || t.guard === (sign > 0 ? 'right' : 'left');
+          if (guarded && Math.abs(target - t.center) > t.half - C.BALL_R) {
+            // No room beside the wall: resolve along s at its approach face.
+            state.s = o.s - (o.d / 2 + C.BALL_R + 0.005);
+            if (state.vs > 0) state.vs = 0;
+          } else {
+            state.r = target;
+            if ((state.vr - o.vr) * sign < 0)
+              state.vr = o.vr - 0.3 * (state.vr - o.vr);
+          }
         } else {
           const sign = Math.sign(ds) || -1;
           state.s = o.s + sign * (o.d / 2 + C.BALL_R + 0.005);
@@ -1072,7 +1092,8 @@
       state.ball.z += state.ball.vz * dt;
       state.ball.y += state.vy * dt;
       state.ball.vy = state.vy;
-      state.s += state.vs * dt; state.r += state.vr * dt;
+      const metric = Math.max(0.3, 1 + frameAt(state.s).p.k * state.r);
+      state.s += state.vs / metric * dt; state.r += state.vr * dt;
       state.h = state.ball.y - C.BALL_R - sampleTrack(state.s, state.r).y;
       spin(0, 0, 0, false, dt);
       ball.position.set(state.ball.x, state.ball.y, state.ball.z);
@@ -1081,7 +1102,8 @@
     }
     if (state.status === 'complete') {
       state.vs *= Math.exp(-3 * dt); state.vr *= Math.exp(-3 * dt);
-      state.s += state.vs * dt; state.r += state.vr * dt;
+      const metric = Math.max(0.3, 1 + frameAt(state.s).p.k * state.r);
+      state.s += state.vs / metric * dt; state.r += state.vr * dt;
       const t = sampleTrack(state.s, state.r);
       if (t.over) state.ball.y = t.y + C.BALL_R;
       else { state.vy -= C.GRAVITY * dt; state.ball.y += state.vy * dt; }
@@ -1090,6 +1112,7 @@
       return;
     }
     const t0 = sampleTrack(state.s, state.r);
+    const metric = Math.max(0.3, 1 + t0.kappa * state.r);
     let grounded = state.grounded && t0.over &&
       Math.abs(state.ball.y - C.BALL_R - t0.y) < 0.065;
     const input = controls();
@@ -1108,7 +1131,7 @@
     if (grounded) {
       // Half-pipe ride: outward v^2*kappa vs the bowl's slope; its own velocity so the
       // steering damping doesn't cancel it (the ball settles up the outer bank).
-      state.vb += (state.vs * state.vs * t0.kappa - C.LAT_G * t0.surfaceSlopeLat) * dt;
+      state.vb += (state.vs * state.vs * t0.kappa / metric - C.LAT_G * t0.surfaceSlopeLat) * dt;
       state.vb *= Math.exp(-C.BANK_DAMP * dt);
     } else state.vb *= Math.exp(-2 * dt);
     if (input.ny > 0 && state.vs < C.MAX_SPEED) {
@@ -1134,7 +1157,7 @@
     if (state.simTime <= boost) state.vs = Math.min(C.PAD_SPEED, state.vs);
 
     const moveDt = shoving ? Math.min(dt, sideTime) : dt;
-    state.s += state.vs * dt;
+    state.s += state.vs / metric * dt;
     state.r += state.vr * moveDt + state.vb * dt;
     if (shoving) {
       sideTime = Math.max(0, sideTime - dt);
@@ -1149,7 +1172,9 @@
     const newRate = surfaceRate(state.s, state.r, state.vs, lateralVelocity);
     const continuous = t0.pieceIndex === t1.pieceIndex ||
       Math.abs(t1.piece.y0 - (t0.yc + t0.grade * (state.s - oldS))) < 0.08;
-    const convex = grounded && t1.over && continuous && oldRate > newRate + 0.5;
+    const kv = (sampleTrack(state.s + 0.5, state.r).grade - t0.grade) / 0.5;
+    const convex = grounded && t1.over && continuous &&
+      (oldRate > newRate + 0.5 || -kv * state.vs * state.vs > C.GRAVITY);
     if (grounded && t1.over && continuous && !convex) {
       state.ball.y = t1.y + C.BALL_R;
       state.vy = newRate;
@@ -1180,7 +1205,7 @@
     state.grounded = grounded;
     state.onBar = grounded ? sampleTrack(state.s, state.r).onBar : -1;
     // Roll only the integrated displacement, never collision push-outs.
-    const prior = worldAt(oldS, oldR);
+    const prior = worldAt(oldS, oldR + carry * dt);
     spin(rolled.x - prior.x, grounded ? state.ball.y - old.y : 0,
       rolled.z - prior.z, grounded, dt);
     guards();
@@ -1208,8 +1233,8 @@
       }
     }
     checkpoints.forEach((cp, i) => {
-      if (!cp.passed && oldS < cp.s && state.s >= cp.s &&
-        state.grounded && sampleTrack(cp.s, state.r).over) {
+      if (!cp.passed && state.s >= cp.s && state.s < cp.s + 6 && state.grounded &&
+        sampleTrack(state.s, state.r).over && i > state.checkpointIndex) {
         cp.passed = true; state.checkpointIndex = i;
         cp.mesh.material.color.setHex(0x3EE6B0);
         cp.mesh.material.emissive.setHex(0x3EE6B0);
@@ -1328,6 +1353,7 @@
     width = Math.max(1, r.width); height = Math.max(1, r.height);
     camera.aspect = width / height; camera.updateProjectionMatrix();
     renderer.setSize(width, height); placePlanet();
+    if (scene && camera) renderer.render(scene, camera);
   }
   function bindInput() {
     const el = renderer.domElement;
@@ -1337,10 +1363,12 @@
       if (pointer !== null || test.paused || state.status === 'complete') return;
       clearInput();
       try { el.setPointerCapture(e.pointerId); } catch (_) { return; }
-      pointer = e.pointerId; origin.x = e.clientX; origin.y = e.clientY; drag.active = true;
+      pointer = e.pointerId;
+      origin.x = lastPX = e.clientX; origin.y = lastPY = e.clientY; drag.active = true;
     }, { passive: false });
     el.addEventListener('pointermove', e => {
       if (e.pointerId !== pointer) return;
+      lastPX = e.clientX; lastPY = e.clientY;
       e.preventDefault();
       // Joystick radius is a fixed share of the shorter screen side (no px floor/cap), so the
       // same drag (as a share of the screen) gives the same steer at every viewport (844x390 included).
@@ -1370,6 +1398,7 @@
     document.addEventListener('visibilitychange', () => { clearInput(); lastFrame = null; accumulator = 0; });
     document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });
     window.addEventListener('resize', resize);
+    window.visualViewport?.addEventListener('resize', resize);
     $('pause-button').addEventListener('click', () => {
       test.paused = !test.paused; clearInput(); accumulator = 0; lastFrame = null;
       $('pause-button').classList.toggle('paused', test.paused);
@@ -1520,6 +1549,12 @@
     scene = new THREE.Scene(); scene.fog = new THREE.Fog(0x2A145C, 45, 160);
     camera = new THREE.PerspectiveCamera(C.FOV, 1, 0.1, 450); scene.add(camera);
     renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+    renderer.domElement.addEventListener('webglcontextlost', e => {
+      e.preventDefault(); test.paused = true;
+    });
+    renderer.domElement.addEventListener('webglcontextrestored', () => {
+      startLevel(state.level); test.paused = false;
+    });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     if ('outputColorSpace' in renderer) renderer.outputColorSpace = THREE.SRGBColorSpace;
     else renderer.outputEncoding = THREE.sRGBEncoding;
